@@ -7,8 +7,8 @@ using namespace std;
 
 template <int64_t sigma>
 class Base4RankVectorWordPacked {
-  uint64_t _b = 512;  // number of symbols per block
-  uint64_t _logb = 9;
+  uint64_t _logb = 10;
+  uint64_t _b = 1 << _logb;  // number of symbols per block
   uint64_t _n;
   uint64_t _N;
   vector<uint64_t> _bits;
@@ -209,8 +209,7 @@ class Base4RankVectorWordPacked {
   }
 
   // Rank of symbol in half-open interval [0..pos)
-  int64_t rank(int64_t pos, char symbol) const {
-    uint64_t sym = (uint64_t)symbol;
+  int64_t rank(int64_t pos, uint64_t sym) const {
     uint64_t blockstart = (pos >> _logb) * (2 * _b + 128) / 64;
     // blockstart is the word offset of the start of the block containing
     // position i

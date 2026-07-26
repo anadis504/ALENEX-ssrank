@@ -7,7 +7,6 @@
 #include "SeqIO/SeqIO.hh"
 #include "SeqIO/buffered_streams.hh"
 #include "SubsetMatrixRank.hh"
-#include "SubsetWT.hh"
 #include "commands.hh"
 #include "cxxopts.hpp"
 #include "globals.hh"
@@ -234,12 +233,6 @@ int search_main(int argc, char** argv) {
     number_of_queries +=
         run_queries(input_files, output_files, sbwt, gzip_output);
   }
-  if (variant == "rrr-matrix") {
-    rrr_matrix_sbwt_t sbwt;
-    sbwt.load(in.stream);
-    number_of_queries +=
-        run_queries(input_files, output_files, sbwt, gzip_output);
-  }
   if (variant == "mef-matrix") {
     mef_matrix_sbwt_t sbwt;
     sbwt.load(in.stream);
@@ -252,44 +245,14 @@ int search_main(int argc, char** argv) {
     number_of_queries +=
         run_queries(input_files, output_files, sbwt, gzip_output);
   }
-  if (variant == "rrr-split") {
-    rrr_split_sbwt_t sbwt;
-    sbwt.load(in.stream);
-    number_of_queries +=
-        run_queries(input_files, output_files, sbwt, gzip_output);
-  }
   if (variant == "mef-split") {
     mef_split_sbwt_t sbwt;
     sbwt.load(in.stream);
     number_of_queries +=
         run_queries(input_files, output_files, sbwt, gzip_output);
   }
-  if (variant == "plain-concat") {
-    plain_concat_sbwt_t sbwt;
-    sbwt.load(in.stream);
-    number_of_queries +=
-        run_queries(input_files, output_files, sbwt, gzip_output);
-  }
-  if (variant == "mef-concat") {
-    mef_concat_sbwt_t sbwt;
-    sbwt.load(in.stream);
-    number_of_queries +=
-        run_queries(input_files, output_files, sbwt, gzip_output);
-  }
-  if (variant == "plain-subsetwt") {
-    plain_sswt_sbwt_t sbwt;
-    sbwt.load(in.stream);
-    number_of_queries +=
-        run_queries(input_files, output_files, sbwt, gzip_output);
-  }
-  if (variant == "rrr-subsetwt") {
-    rrr_sswt_sbwt_t sbwt;
-    sbwt.load(in.stream);
-    number_of_queries +=
-        run_queries(input_files, output_files, sbwt, gzip_output);
-  }
-  if (variant == "new-concat") {
-    new_concat_sbwt_t sbwt;
+  if (variant == "ef-split") {
+    ef_split_sbwt_t sbwt;
     sbwt.load(in.stream);
     number_of_queries +=
         run_queries(input_files, output_files, sbwt, gzip_output);
@@ -300,26 +263,26 @@ int search_main(int argc, char** argv) {
     number_of_queries +=
         run_queries(input_files, output_files, sbwt, gzip_output);
   }
-  if (variant == "split-smaller-size") {
-    split_smaller_size_sbwt_t sbwt;
+  if (variant == "pred8-split-packed") {
+    new_split_packed_sbwt_t sbwt;
     sbwt.load(in.stream);
     number_of_queries +=
         run_queries(input_files, output_files, sbwt, gzip_output);
   }
-  if (variant == "concat-split-lengths") {
-    concat_split_lengths_sbwt_t sbwt;
+  if (variant == "pred8-split-w-packed") {
+    new_split_w_packed_sbwt_t sbwt;
     sbwt.load(in.stream);
     number_of_queries +=
         run_queries(input_files, output_files, sbwt, gzip_output);
   }
-  if (variant == "new-plain-concat") {
-    new_plain_concat_sbwt_t sbwt;
+  if (variant == "pred8-split-transposed") {
+    new_split_transposed_sbwt_t sbwt;
     sbwt.load(in.stream);
     number_of_queries +=
         run_queries(input_files, output_files, sbwt, gzip_output);
   }
-  if (variant == "new-split") {
-    new_split_sbwt_t sbwt;
+  if (variant == "pino-split-transposed") {
+    new_split_pino_transposed_sbwt_t sbwt;
     sbwt.load(in.stream);
     number_of_queries +=
         run_queries(input_files, output_files, sbwt, gzip_output);
@@ -330,19 +293,25 @@ int search_main(int argc, char** argv) {
     number_of_queries +=
         run_queries(input_files, output_files, sbwt, gzip_output);
   }
-  if (variant == "fixed-block-correction-sets1") {
+  if (variant == "fixed-block-correction-setsA") {
     fixed_block_correction_sets1_sbwt_t sbwt;
     sbwt.load(in.stream);
     number_of_queries +=
         run_queries(input_files, output_files, sbwt, gzip_output);
   }
-  if (variant == "fixed-block-correction-sets2") {
+  if (variant == "fixed-block-correction-setsA-smaller") {
+    fixed_block_correction_sets1_smaller_sbwt_t sbwt;
+    sbwt.load(in.stream);
+    number_of_queries +=
+        run_queries(input_files, output_files, sbwt, gzip_output);
+  }
+  if (variant == "fixed-block-correction-setsB") {
     fixed_block_correction_sets2_sbwt_t sbwt;
     sbwt.load(in.stream);
     number_of_queries +=
         run_queries(input_files, output_files, sbwt, gzip_output);
   }
-  if (variant == "fixed-block-correction-sets3") {
+  if (variant == "fixed-block-correction-setsC") {
     fixed_block_correction_sets3_sbwt_t sbwt;
     sbwt.load(in.stream);
     number_of_queries +=
@@ -360,12 +329,18 @@ int search_main(int argc, char** argv) {
     number_of_queries +=
         run_queries(input_files, output_files, sbwt, gzip_output);
   }
-  if (variant == "pred8-split") {
+  if (variant == "pred8-WT-split") {
     pred8_split_sbwt_t sbwt;
     sbwt.load(in.stream);
     number_of_queries +=
         run_queries(input_files, output_files, sbwt, gzip_output);
   }
+  if (variant == "pino-WT-split") {
+    pred8_pino_split_sbwt_t sbwt;
+    sbwt.load(in.stream);
+    number_of_queries +=
+        run_queries(input_files, output_files, sbwt, gzip_output);
+  }  
   int64_t total_micros = cur_time_micros() - micros_start;
   write_log("us/query end-to-end: " +
                 to_string((double)total_micros / number_of_queries),

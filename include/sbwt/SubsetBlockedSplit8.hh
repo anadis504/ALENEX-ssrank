@@ -28,7 +28,6 @@ class SubsetBlockedSplitRank8 {
 
   // Count of character c in subsets up to pos, not including pos
   int64_t rank(int64_t pos, char c) const {
-
     uint8_t c_coded;
     switch (c) {
       case 'A':
@@ -53,6 +52,10 @@ class SubsetBlockedSplitRank8 {
     return result;
   }
 
+  int64_t rank_by_charidx(int64_t pos, int64_t char_idx) const {
+    return the_data_structure.rank(pos, char_idx);
+  }
+
   bool contains(int64_t pos, char c) const {
     // TODO: faster
     int64_t r1 = this->rank(pos, c);
@@ -63,9 +66,9 @@ class SubsetBlockedSplitRank8 {
   SubsetBlockedSplitRank8() {}
 
   SubsetBlockedSplitRank8(const sdsl::bit_vector& A_bits,
-                         const sdsl::bit_vector& C_bits,
-                         const sdsl::bit_vector& G_bits,
-                         const sdsl::bit_vector& T_bits) {
+                          const sdsl::bit_vector& C_bits,
+                          const sdsl::bit_vector& G_bits,
+                          const sdsl::bit_vector& T_bits) {
     assert(A_bits.size() == C_bits.size() && C_bits.size() == G_bits.size() &&
            G_bits.size() == T_bits.size());
 
@@ -164,23 +167,35 @@ class SubsetBlockedSplitRank8 {
       int64_t ownG = this->rank(i, 'G');
       int64_t ownT = this->rank(i, 'T');
       if (!(rA == ownA)) {
-        std::cerr << wrongs+1 << "st Rank mismatch at position " << i << " for A: " << rA
-                  << " vs " << ownA << '\n';
+        std::cerr << wrongs + 1 << "st Rank mismatch at position " << i
+                  << " for A : " << rA
+                  << " vs "
+                  << ownA
+                  << '\n';
         wrongs++;
       }
       if (!(rC == ownC)) {
-        std::cerr << wrongs+1 << "st Rank mismatch at position " << i << " for C: " << rC
-                  << " vs " << ownC << '\n';
+        std::cerr << wrongs + 1 << "st Rank mismatch at position " << i
+                  << " for C : " << rC
+                  << " vs "
+                  << ownC
+                  << '\n';
         wrongs++;
       }
       if (!(rG == ownG)) {
-        std::cerr << wrongs+1 << "st Rank mismatch at position " << i << " for G: " << rG
-                  << " vs " << ownG << '\n';
+        std::cerr << wrongs + 1 << "st Rank mismatch at position " << i
+                  << " for G : " << rG
+                  << " vs "
+                  << ownG
+                  << '\n';
         wrongs++;
       }
       if (!(rT == ownT)) {
-        std::cerr << wrongs+1 << "st Rank mismatch at position " << i << " for T: " << rT
-                  << " vs " << ownT << '\n';
+        std::cerr << wrongs + 1 << "st Rank mismatch at position " << i
+                  << " for T : " << rT
+                  << " vs "
+                  << ownT
+                  << '\n';
         wrongs++;
       }
       if (wrongs > 20) {

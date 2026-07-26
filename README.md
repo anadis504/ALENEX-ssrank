@@ -1,10 +1,6 @@
-# NEWS 20.12. 2024
-
-A Rust version of the library is now available at https://crates.io/crates/sbwt/. The Rust version currently only supports the plain matrix SBWT variant. In some parts, the Rust library goes beyond what the C++ library can do: for example, it provides a streaming matching statistics algorithm using the longest common suffix array of the SBWT. The Rust API is able to read a plain matrix SBWT variant built with the C++ code. 
-
 # SBWT
 
-This is the code for the paper [Succinct k-mer Set Representations Using Subset Rank Queries on the Spectral Burrows-Wheeler Transform (SBWT)](https://www.biorxiv.org/content/10.1101/2022.05.19.492613v1). The repository includes implementations of the various SBWT variants described in the paper. The data structures answer k-mer membership queries on the input data. Note that contrary to many other k-mer membership data structures, our code is not aware of DNA reverse complements. That is, it considers a k-mer and its reverse complement as separate k-mers.
+This is the code for the paper [New space-time tradeoffs for subset rank and k-mer lookup](). The repository includes implementations of the various SBWT variants described in the paper. The data structures answer k-mer membership queries on the input data. Note that contrary to many other k-mer membership data structures, our code is not aware of DNA reverse complements. That is, it considers a k-mer and its reverse complement as separate k-mers.
 
 This construction algorithm is based on the lightning-fast [k-mer counter KMC](https://github.com/refresh-bio/KMC). We call the KMC binaries directly from our code. The construction is very disk-heavy, so it is recommended to run construction code off a fast SSD drive.
 
@@ -15,7 +11,7 @@ The following commands have been tested to successfully build SBWT on a clean Ub
 ```
 apt-get update
 apt-get install -y g++ gcc cmake git python3-dev g++-8 libz-dev
-git clone https://github.com/anadis504/ESA-ssrank
+
 cd SBWT/build
 cmake .. -DCMAKE_CXX_COMPILER=g++-8 -DMAX_KMER_LENGTH=32
 make -j8
@@ -50,43 +46,73 @@ Construct an SBWT variant.
 Usage:
   build [OPTION...]
 
-  -i, --in-file arg             The input sequences as a FASTA or FASTQ
-				file, possibly gzipped. If the file
-				extension is .txt, the file is interpreted
-				as a list of input files, one file on each
-				line. All input files must be in the same
-				format.
+  -i, --in-file arg             The input sequences as a FASTA or FASTQ 
+                                file, possibly gzipped. If the file 
+                                extension is .txt, the file is interpreted 
+                                as a list of input files, one file on each 
+                                line. All input files must be in the same 
+                                format.
   -o, --out-file arg            Output file for the constructed index.
   -k, --kmer-length arg         The k-mer length.
-      --variant arg             The SBWT variant to build. Available
-				variants: plain-matrix rrr-matrix
-				mef-matrix plain-split rrr-split mef-split
-				plain-concat mef-concat plain-subsetwt
-				rrr-subsetwt (default: plain-matrix)
+  -p, --precalc-length arg      Precalculate SBWT intervals of strings of 
+                                this length. Speeds up query, but takes 
+                                4^(p+2) bytes of memory. (default: 8)
+      --variant arg             The SBWT variant to build. Available 
+                                variants:
+                                plain-matrix
+                                mef-matrix
+                                plain-split
+                                mef-split
+                                ef-split
+                                pred8-WT-split
+                                pino-WT-split
+                                pred8-split-packed
+                                pred8-split-w-packed
+                                pred8-split-transposed
+                                pino-split-transposed
+                                correction-sets
+                                blocked-correction-sets
+                                fixed-block-correction-setsA-smaller
+                                fixed-block-correction-setsA
+                                fixed-block-correction-setsB
+                                fixed-block-correction-setsC
+                                blocked8-split
+                                blocked9-split (default: plain-matrix)
       --add-reverse-complements
-				Also add the reverse complement of every
-				k-mer to the index. Warning: this creates a
-				temporary reverse-complemented duplicate of
-				each input file before construction. Make
-				sure that the directory at --temp-dir can
-				handle this amount of data. If the input is
-				gzipped, the duplicate will also be
-				compressed, which might take a while.
-      --no-streaming-support    Save space by not building the streaming
-				query support bit vector. This leads to
-				slower queries.
+                                Also add the reverse complement of every 
+                                k-mer to the index. Warning: this creates a 
+                                temporary reverse-complemented duplicate of 
+                                each input file before construction. Make 
+                                sure that the directory at --temp-dir can 
+                                handle this amount of data. If the input is 
+                                gzipped, the duplicate will also be 
+                                compressed, which might take a while.
+      --no-streaming-support    Save space by not building the streaming 
+                                query support bit vector. This leads to 
+                                slower queries.
   -t, --n-threads arg           Number of parallel threads. (default: 1)
-  -a, --min-abundance arg       Discard all k-mers occurring fewer than
-				this many times. By default we keep all
-				k-mers. Note that we consider a k-mer
-				distinct from its reverse complement.
-				(default: 1)
-  -b, --max-abundance arg       Discard all k-mers occurring more than this
-				many times. (default: 1000000000)
-  -m, --ram-gigas arg           RAM budget in gigabytes (not strictly
-				enforced). Must be at least 2. (default: 2)
+  -a, --min-abundance arg       Discard all k-mers occurring fewer than 
+                                this many times. By default we keep all 
+                                k-mers. Note that we consider a k-mer 
+                                distinct from its reverse complement. 
+                                (default: 1)
+  -b, --max-abundance arg       Discard all k-mers occurring more than this 
+                                many times. (default: 1000000000)
+  -m, --ram-gigas arg           RAM budget in gigabytes (not strictly 
+                                enforced). Must be at least 2. (default: 2)
   -d, --temp-dir arg            Location for temporary files. (default: .)
+  -v, --verbose                 Print more verbose output.
   -h, --help                    Print usage
+
+Usage example: build -i example_data/coli3.fna -o index.sbwt -k 30
+```
+
+
+``` diff
++ To build, e.g., the corrections-sets variant from the already constructed plain-matrix variant with k=31 and reverse compliemnt added (Ecoli_31_r.sbwt) of the coli3682_dataset provided in the dropbox folder:
+```
+```
+./build/bin/sbwt build-variant -i ./Ecoli_31_.sbwt -o ./correction-sets.sbwt --variant correction-sets
 ```
 
 # Running queries

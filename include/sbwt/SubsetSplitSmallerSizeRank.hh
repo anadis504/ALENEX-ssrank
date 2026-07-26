@@ -7,6 +7,7 @@
 
 #include "Base4RankVector.hh"
 #include "Base4RankVectorWordPacked.hh"
+#include "Base4RankVectorTransposed.hh"
 #include "Pred8v2.hh"
 #include "globals.hh"
 
@@ -20,7 +21,7 @@ class SubsetSplitSmallerSizeRank {
   X_bitvector_rank_type nonsingleton_sets_rs; */
 
  public:
-  Base4RankVectorWordPacked<4> concat;
+  Base4RankVectorTransposed<4> concat;
 
   Pred8v2 nonsingleton_sets;
   /* Pred8v2 empty_sets; */
@@ -171,6 +172,35 @@ class SubsetSplitSmallerSizeRank {
     return pre_result + correction;
   }
 
+  int64_t rank_by_charidx(int64_t pos, int64_t char_idx) const {
+    int64_t ns_rank = nonsingleton_sets.rank(pos);
+    int64_t ne_rank = ns_rank - empty_sets_rs.rank(ns_rank);
+    int64_t correction = 0;
+    switch (char_idx) {
+      case 0:
+        correction = Z_A_rs.rank(ne_rank);
+        break;
+      case 1:
+        correction = Z_C_rs.rank(ne_rank);
+        break;
+      case 2:
+        correction = Z_G_rs.rank(ne_rank);
+        break;
+      case 3:
+        correction = Z_T_rs.rank(ne_rank);
+        break;
+      default:
+        cerr << "Error: Rank called with non-ACGT character: " << char_idx
+             << endl;
+        exit(1);
+    }
+    int64_t pre_result =
+        concat.rank(pos - ns_rank, char_idx_to_DNA(char_idx));
+    /* std::cout << "Final result for rank(" << pos << "," << (int)c << ") is "
+              << result << '\n'; */
+    return pre_result + correction;
+  }
+
   bool contains(int64_t pos, char c) const {
     // TODO: faster
     int64_t r1 = this->rank(pos, c);
@@ -246,7 +276,7 @@ class SubsetSplitSmallerSizeRank {
     }
     std::cout << "Y_str_idx: " << Y_str_idx << " Z_idx: " << Z_idx
               << " nonsingletons_idx: " << nonsingletons_idx << '\n';
-    concat = Base4RankVectorWordPacked<4>(Y_str);
+    concat = Base4RankVectorTransposed<4>(Y_str);
     nonsingleton_sets = Pred8v2(nonsingleton_sets_vec);
     /* empty_sets = Pred8v2(empty_sets_plain); */
     empty_sets = bitvector_t(empty_sets_plain);

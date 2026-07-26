@@ -4,37 +4,44 @@
 #include <filesystem>
 #include <string>
 
+#include "Base4RankVector.hh"
+#include "Base4RankVectorTransposed.hh"
+#include "Base4RankVectorWordPacked.hh"
+#include "BlockedCorrectionSetsConstant.hh"
+#include "BlockedCorrectionSetsConstantSmaller.hh"
+#include "BlockedCorrectionSetsConstantWordPacked6.hh"
+#include "BlockedCorrectionSetsConstantWordPacked6smaller.hh"
+#include "BlockedCorrectionSetsConstantWordPacked7.hh"
+#include "BlockedCorrectionSetsConstantWordPacked7smaller.hh"
 #include "MEF.hpp"
+#include "Pred16_BS.hh"
+#include "Pred16vPino_BS.hh"
+#include "Pred8vPinoLight.hh"
 #include "SBWT.hh"
 #include "SubsetBlockedCorrectionSets.hh"
 #include "SubsetBlockedSplit8.hh"
 #include "SubsetBlockedSplit9.hh"
-#include "SubsetConcatRank.hh"
+#include "SubsetConcatCorrectionSetRank.hh"
 #include "SubsetConcatSplitLenthsRank.hh"
 #include "SubsetCorrectionSets.hh"
+#include "SubsetFixedBlockCorrectionSets6.hh"
+#include "SubsetFixedBlockCorrectionSets7.hh"
 #include "SubsetMatrixRank.hh"
 #include "SubsetNewConcatRank.hh"
-#include "SubsetNewPlainConcatRank.hh"
 #include "SubsetNewSplitRank.hh"
 #include "SubsetSplitRank.hh"
 #include "SubsetSplitRankPred8.hh"
 #include "SubsetSplitSmallerSizeRank.hh"
-#include "SubsetWT.hh"
 #include "cxxopts.hpp"
 #include "globals.hh"
 #include "stdlib_printing.hh"
-#include "SubsetFixedBlockCorrectionSets1.hh"
-#include "SubsetFixedBlockCorrectionSets2.hh"
-#include "SubsetFixedBlockCorrectionSets3.hh"
 
 namespace sbwt {
 
 // matrices
 typedef SBWT<SubsetMatrixRank<sdsl::bit_vector, sdsl::rank_support_v5<>>>
     plain_matrix_sbwt_t;
-typedef SBWT<
-    SubsetMatrixRank<sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type>>
-    rrr_matrix_sbwt_t;
+
 typedef SBWT<SubsetMatrixRank<mod_ef_vector<>, mod_ef_vector<>::rank_1_type>>
     mef_matrix_sbwt_t;  // Currently does not support extracting all k-mers
                         // because mod_ef_vector does not support access.
@@ -44,76 +51,91 @@ typedef SBWT<SubsetSplitRank<sdsl::bit_vector, sdsl::rank_support_v5<>,
                              sdsl::bit_vector, sdsl::rank_support_v5<>>>
     plain_split_sbwt_t;
 
-typedef SBWT<
-    SubsetSplitRank<sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type,
-                    sdsl::bit_vector, sdsl::rank_support_v5<>>>
-    rrr_split_sbwt_t;
-
 typedef SBWT<SubsetSplitRank<mod_ef_vector<>, mod_ef_vector<>::rank_1_type,
                              sdsl::bit_vector, sdsl::rank_support_v5<>>>
     mef_split_sbwt_t;  // Currently does not support extracting all k-mers
                        // because mod_ef_vector does not support access.
 
-// concats
-typedef SBWT<SubsetConcatRank<
-    sdsl::bit_vector, sdsl::bit_vector::select_0_type,
-    sdsl::wt_blcd<sdsl::bit_vector, sdsl::rank_support_v5<>,
-                  sdsl::select_support_scan<1>, sdsl::select_support_scan<0>>>>
-    plain_concat_sbwt_t;
+typedef SBWT<SubsetSplitRank<sdsl::sd_vector<>, sdsl::sd_vector<>::rank_1_type,
+                             sdsl::bit_vector, sdsl::rank_support_v5<>>>
+    ef_split_sbwt_t;
 
+// new splits
 typedef SBWT<
-    SubsetConcatRank<sd_vector<>, sd_vector<>::select_0_type,
-                     sdsl::wt_blcd<rrr_vector<63>, rrr_vector<>::rank_1_type,
-                                   rrr_vector<>::select_1_type,
-                                   rrr_vector<>::select_0_type>>>
-    mef_concat_sbwt_t;  // Currently does not support extracting all k-mers
-                        // because mod_ef_vector does not support access.
+    SubsetSplitRankPred8<Pred8v2, sdsl::bit_vector, sdsl::rank_support_v5<>>>
+    pred8_split_sbwt_t;
+typedef SBWT<SubsetSplitRankPred8<Pred8vPinoLight, sdsl::bit_vector,
+                                  sdsl::rank_support_v5<>>>
+    pred8_pino_split_sbwt_t;
 
-// wavelet trees
-typedef SBWT<SubsetWT<
-    sdsl::wt_blcd<sdsl::bit_vector, sdsl::rank_support_v5<>,
-                  sdsl::select_support_scan<1>, sdsl::select_support_scan<0>>>>
-    plain_sswt_sbwt_t;
+typedef SBWT<SubsetNewSplitRank<Pred8v2, Base4RankVector<4>, sdsl::bit_vector,
+                                sdsl::rank_support_v5<>>>
+    new_split_packed_sbwt_t;
 
-typedef SBWT<SubsetWT<
-    sdsl::wt_blcd<sdsl::rrr_vector<>, sdsl::rrr_vector<>::rank_1_type,
-                  rrr_vector<>::select_1_type, rrr_vector<>::select_0_type>>>
-    rrr_sswt_sbwt_t;
+typedef SBWT<SubsetNewSplitRank<Pred8v2, Base4RankVectorWordPacked<4>,
+                                sdsl::bit_vector, sdsl::rank_support_v5<>>>
+    new_split_w_packed_sbwt_t;
 
-typedef SBWT<SubsetNewConcatRank<sdsl::bit_vector, sdsl::rank_support_v5<>>>
-    new_concat_sbwt_t;
-typedef SBWT<
-    SubsetCorrectionSetsRank<sdsl::bit_vector, sdsl::rank_support_v5<>>>
+typedef SBWT<SubsetNewSplitRank<Pred8v2, Base4RankVectorTransposed<4>,
+                                sdsl::bit_vector, sdsl::rank_support_v5<>>>
+    new_split_transposed_sbwt_t;
+
+typedef SBWT<SubsetNewSplitRank<Pred8vPinoLight, Base4RankVectorTransposed<4>,
+                                sdsl::bit_vector, sdsl::rank_support_v5<>>>
+    new_split_pino_transposed_sbwt_t;
+
+typedef SBWT<SubsetBlockedSplitRank8<sdsl::bit_vector, sdsl::rank_support_v5<>>>
+    blocked8_split_sbwt_t;
+typedef SBWT<SubsetBlockedSplitRank9<sdsl::bit_vector, sdsl::rank_support_v5<>>>
+    blocked9_split_sbwt_t;
+
+// Correction set
+typedef SBWT<SubsetCorrectionSetsRank<Base4RankVectorTransposed<4>,
+                                      sdsl::bit_vector, sdsl::rank_support_v5<>,
+                                      Pred8vPinoLight, Pred8vPinoLight>>
     correction_sets_sbwt_t;
+
+typedef SBWT<
+    SubsetBlockedCorrectionSetsRank<sdsl::bit_vector, sdsl::rank_support_v5<>>>
+    blocked_correction_sets_sbwt_t;
+typedef SBWT<SubsetFixedBlockCorrectionSetsRank7<
+    FixedBlockedCorrectionSetsBase4Rank1<4>, sdsl::bit_vector,
+    sdsl::rank_support_v5<>>>
+    fixed_block_correction_sets1_sbwt_t;
+
+typedef SBWT<SubsetFixedBlockCorrectionSetsRank7<
+    FixedBlockedCorrectionSetsBase4Rank1_<4>, sdsl::bit_vector,
+    sdsl::rank_support_v5<>>>
+    fixed_block_correction_sets1_smaller_sbwt_t;
+
+typedef SBWT<SubsetFixedBlockCorrectionSetsRank7<
+    FixedBlockedCorrectionSetsBase4Rank2<4>, sdsl::bit_vector,
+    sdsl::rank_support_v5<>>>
+    fixed_block_correction_sets2_sbwt_t;
+
+typedef SBWT<SubsetFixedBlockCorrectionSetsRank3<
+    BlockedCorrectionSetsBase4Rank67<4>, sdsl::bit_vector,
+    sdsl::rank_support_v5<>>>
+    fixed_block_correction_sets3_sbwt_t;
+
+// Other tested variants not included in the paper
+/* typedef SBWT<SubsetFixedBlockCorrectionSetsRank3<
+    BlockedCorrectionSetsBase4Rank3_<4>, sdsl::bit_vector,
+    sdsl::rank_support_v5<>>>
+    fixed_block_correction_sets3_smaller_sbwt_t;
+typedef SBWT<SubsetFixedBlockCorrectionSetsRank7<
+    FixedBlockedCorrectionSetsBase4Rank2_<4>, sdsl::bit_vector,
+    sdsl::rank_support_v5<>>>
+    fixed_block_correction_sets2_smaller_sbwt_t;
+typedef SBWT<SubsetConcatCorrectionSetRank<
+    sdsl::bit_vector, sdsl::rank_support_v5<>, Pred8vPinoLight>>
+    concat_correction_set_sbwt_t;
 typedef SBWT<
     SubsetSplitSmallerSizeRank<sdsl::bit_vector, sdsl::rank_support_v5<>>>
     split_smaller_size_sbwt_t;
 typedef SBWT<
     SubsetConcatSplitLengthsRank<sdsl::bit_vector, sdsl::rank_support_v5<>>>
     concat_split_lengths_sbwt_t;
-typedef SBWT<
-    SubsetNewPlainConcatRank<sdsl::bit_vector, sdsl::rank_support_v5<>>>
-    new_plain_concat_sbwt_t;
-typedef SBWT<SubsetNewSplitRank<sdsl::bit_vector, sdsl::rank_support_v5<>>>
-    new_split_sbwt_t;
-typedef SBWT<
-    SubsetBlockedCorrectionSetsRank<sdsl::bit_vector, sdsl::rank_support_v5<>>>
-    blocked_correction_sets_sbwt_t;
-typedef SBWT<
-    SubsetFixedBlockCorrectionSetsRank1<sdsl::bit_vector, sdsl::rank_support_v5<>>>
-    fixed_block_correction_sets1_sbwt_t;
-typedef SBWT<
-    SubsetFixedBlockCorrectionSetsRank2<sdsl::bit_vector, sdsl::rank_support_v5<>>>
-    fixed_block_correction_sets2_sbwt_t;
-typedef SBWT<
-    SubsetFixedBlockCorrectionSetsRank3<sdsl::bit_vector, sdsl::rank_support_v5<>>>
-    fixed_block_correction_sets3_sbwt_t;
-typedef SBWT<SubsetBlockedSplitRank8<sdsl::bit_vector, sdsl::rank_support_v5<>>>
-    blocked8_split_sbwt_t;
-typedef SBWT<SubsetBlockedSplitRank9<sdsl::bit_vector, sdsl::rank_support_v5<>>>
-    blocked9_split_sbwt_t;
-typedef SBWT<SubsetSplitRankPred8<mod_ef_vector<>, mod_ef_vector<>::rank_1_type,
-                                  sdsl::bit_vector, sdsl::rank_support_v5<>>>
-    pred8_split_sbwt_t;
-
+typedef SBWT<SubsetNewConcatRank<sdsl::bit_vector, sdsl::rank_support_v5<>>>
+    new_concat_sbwt_t; */
 }  // namespace sbwt

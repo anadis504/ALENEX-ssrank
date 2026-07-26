@@ -12,7 +12,7 @@
 
 namespace sbwt {
 
-template <typename X_bitvector_t, typename X_bitvector_rank_t,
+template <typename pred8_t,
           typename Z_bitvector_t, typename Z_rank_support_t>
 class SubsetSplitRankPred8 {
   typedef sdsl::wt_blcd<sdsl::bit_vector,          // Underlying bit vector type
@@ -23,8 +23,8 @@ class SubsetSplitRankPred8 {
       WT_type;  // Scan = no fast select support
 
  public:
-  Pred8v2 X;  // Marks which columns have other than 1 outgoing edge (0 or >= 2)
-  
+  pred8_t X;  // Marks which columns have other than 1 outgoing edge (0 or >= 2)
+
   WT_type Y;  // The outgoing labels in columns with exactly one outgoing edge
   Z_bitvector_t
       Z_A;  // The row of 'A' in the Z matrix, in columns with != 1 one-bit
@@ -142,7 +142,7 @@ class SubsetSplitRankPred8 {
       }
     }
 
-    X = Pred8v2(nonsingleton_sets_vec);
+    X = pred8_t(nonsingleton_sets_vec);
     sdsl::construct_im(
         Y, Y_str.c_str(),
         1);  // 1: file format is a sequence, not a serialized sdsl object
@@ -242,6 +242,26 @@ class SubsetSplitRankPred8 {
         return Y_count + Z_T_rs.rank(rank1);
       default:
         cerr << "Error: Rank called with non-ACGT character: " << c << endl;
+        exit(1);
+    }
+  }
+
+  int64_t rank_by_charidx(int64_t pos, int64_t char_idx) const {
+    int64_t rank1 = X.rank(pos);
+    int64_t rank0 = pos - rank1;
+    int64_t Y_count = Y.rank(rank0, (uint64_t)char_idx);
+    switch (char_idx) {
+      case 0:
+        return Y_count + Z_A_rs.rank(rank1);
+      case 1:
+        return Y_count + Z_C_rs.rank(rank1);
+      case 2:
+        return Y_count + Z_G_rs.rank(rank1);
+      case 3:
+        return Y_count + Z_T_rs.rank(rank1);
+      default:
+        cerr << "Error: Rank called with non-ACGT character: " << char_idx
+             << endl;
         exit(1);
     }
   }

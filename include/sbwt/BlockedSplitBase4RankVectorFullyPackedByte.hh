@@ -120,8 +120,6 @@ class BlockedSplitBase4RankWordPackedByte {
         psums[0] = psums[1] = psums[2] = psums[3] = 0;
       }
       if (sets_processed % _b == 0) {
-       
-
         if (block_num % 9 == 0) {
           _p[p_ptr] = (uint32_t)bi;
           p_global_value = (uint64_t)bi;
@@ -130,7 +128,7 @@ class BlockedSplitBase4RankWordPackedByte {
           uint64_t offset = (uint64_t)bi - p_global_value;
           uint64_t inner_i = block_num % 9;
           offset -= inner_i * p_min;
-          
+
           ((uint8_t*)(_p.data() + p_ptr))[inner_i - 1] = (uint8_t)(offset);
           if (inner_i == 8) {
             p_ptr += 2;
@@ -155,7 +153,7 @@ class BlockedSplitBase4RankWordPackedByte {
           ((uint16_t*)(_bits.data() + bi))[local_i] =
               (uint16_t)block_m << 8 | (uint8_t)curr_pos_16;
         }
-      
+
         local_i += 2;
         uint64_t delta = 0;
         uint16_t prev_pos = curr_pos % _b;
@@ -174,7 +172,7 @@ class BlockedSplitBase4RankWordPackedByte {
             local_i++;
             ((uint8_t*)(_bits.data() + bi))[local_i] = (uint8_t)delta;
             bigs_count++;
-           
+
           } else {
             ((uint8_t*)(_bits.data() + bi))[local_i] =
                 ((uint8_t)delta << 4) | (uint8_t)col;
@@ -193,41 +191,25 @@ class BlockedSplitBase4RankWordPackedByte {
              << 4);  // store the number of big deltas in the correction set
         bi += (local_i + 7) / 8;  // move past the words containing the
         padding_used = (local_i + 7) / 8 * 8 - local_i;
-    
+
         block_s = _b - block_m;
         block_num++;
         s_counter = 0;
         sets_processed += block_m;
-
       }
 
       // Now construct the concat string bits
       uint64_t j = 0;
       uint64_t upper_w = 0;
       uint64_t lower_w = 0;
-      uint64_t lower_w_tmp = 0;
-      int smalls = 0;
-      int highs = 0;
       while (j < 64 && (i + j) < seq_size && s_counter < block_s) {
         uint8_t sym = seq[str_ptr++];
-
-        if (sigma == 3)
-          sym++;  // for ternary sequences, remap the alphabet from {0,1,2} to
-                  // {1,2,3}
         psums[sym]++;
-
-        // w = w | (((uint64_t)sym) << (2 * j));
         upper_w = upper_w | (((uint64_t)(bool)(sym & 0x2)) << (j));
-        if (!(sym & 0x2)) {
-          lower_w = lower_w | (((uint64_t)(sym & 0x1)) << (smalls++));
-        } else {
-          lower_w_tmp = lower_w_tmp | (((uint64_t)(sym & 0x1)) << (highs++));
-        }
+        lower_w = lower_w | (((uint64_t)(bool)(sym & 0x1)) << (j));
         j++;
         s_counter++;
       }
-
-      lower_w = lower_w | (lower_w_tmp << (64 - highs));
       _bits[bi] = upper_w;
       bi++;
       _bits[bi] = lower_w;
@@ -274,9 +256,32 @@ class BlockedSplitBase4RankWordPackedByte {
     cout << '\n';
   }
 
+  void rank_in_payload(const uint64_t* blockwords, int64_t blocki, uint64_t pos,
+                       uint8_t sym, uint64_t& wholeWordRank,
+                       uint64_t& leftOverRank, uint64_t start_pos = 0) const {
+    uint64_t countpA = 0, countpB = 0;
+    for (uint64_t i = start_pos; i < blocki; i += 2) {
+      uint64_t upper_w = blockwords[i];
+      uint64_t lower_w = blockwords[i + 1];
+      upper_w = (sym & 0x2) ? upper_w : ~upper_w;
+      lower_w = (sym & 0x1) ? lower_w : ~lower_w;
+      wholeWordRank += __builtin_popcountll(upper_w & lower_w);
+    }
+
+    if (pos % 64) {  // possibly inspect part of the next word
+      uint64_t upper_w = blockwords[blocki];
+      // compute an appropriate shift
+      uint32_t shift =
+          64 - (pos % 64);  // pos%64 is never 0 inside this if statement
+      uint64_t lower_w = blockwords[blocki + 1];
+      upper_w = (sym & 0x2) ? upper_w : ~upper_w;
+      lower_w = (sym & 0x1) ? lower_w : ~lower_w;
+      leftOverRank = __builtin_popcountll((upper_w & lower_w) << shift);
+    }
+  }
+
   // Rank of symbol in half-open interval [0..pos)
-  int64_t rank(int64_t pos, char symbol) const {
-    uint64_t sym = (uint64_t)symbol;
+  int64_t rank(int64_t pos, uint64_t sym) const {
     uint64_t super_sum =
         ((uint64_t*)(_p.data() + 8 * (pos >> _log_superb)))[sym];
     uint64_t ub_sum =
@@ -289,11 +294,11 @@ class BlockedSplitBase4RankWordPackedByte {
       blockstart += ((uint8_t*)(_p.data() + p_global_offset + 1))[inner_i - 1] +
                     inner_i * p_min;
     }
-    
+
     uint64_t preBlockRank = ((
         uint16_t*)(_bits.data() +
                    blockstart))[sym];  // retrieve the appropriate preblock rank
-  
+
     blockstart++;
     uint64_t block_m = ((uint16_t*)(_bits.data() + blockstart))[0];
     uint64_t curr_pos = 0;
@@ -328,7 +333,6 @@ class BlockedSplitBase4RankWordPackedByte {
       }
     }
 
-   
     const uint64_t* blockwords =
         _bits.data() + blockstart +
         (block_m + 2 + bigs_count + 7) /
@@ -341,55 +345,12 @@ class BlockedSplitBase4RankWordPackedByte {
         ((pos & (_b - 1)) / 64) *
         2;  // index of word in this block containing the query position
 
-    uint64_t countpA = 0, countpB = 0, wholeWordRank = 0, leftOverRank = 0;
+    uint64_t wholeWordRank = 0, leftOverRank = 0;
+    rank_in_payload(blockwords, blocki, pos, sym, wholeWordRank, leftOverRank);
 
-    for (uint64_t i = 0; i < blocki; i += 2) {
-      uint64_t upper_w = blockwords[i];
-      uint64_t lower_w = blockwords[i + 1];
-      uint64_t highs = __builtin_popcountll(upper_w);
-      uint64_t lows = 64 - highs;
-
-      if (sym < 2) {
-        countpB = lows ? __builtin_popcountll(lower_w << highs) : 0;
-        countpA = lows - countpB;
-
-      } else {
-        countpB = highs ? __builtin_popcountll(lower_w >> lows) : 0;
-        countpA = highs - countpB;
-      }
-      wholeWordRank += (sym & 1) ? countpB : countpA;
-    }
-
-    if (pos % 64) {  // possibly inspect part of the next word
-      uint64_t upper_w = blockwords[blocki];
-      // compute an appropriate shift
-      uint32_t shift =
-          64 - (pos % 64);  // pos%64 is never 0 inside this if statement
-      uint64_t lower_w = blockwords[blocki + 1];
-      uint64_t highs = __builtin_popcountll(upper_w);
-      uint64_t lows = 64 - highs;
-      uint64_t needed_highs = __builtin_popcountll(upper_w << shift);
-      uint64_t needed_lows = (pos % 64) - needed_highs;
-
-      if (sym < 2) {
-        countpB = needed_lows ? __builtin_popcountll((lower_w << highs)
-                                                     << (lows - needed_lows))
-                              : 0;  // shift to keep needed lows
-        countpA = needed_lows - countpB;
-
-      } else {
-        countpB = needed_highs
-                      ? __builtin_popcountll(((lower_w >> lows) << lows)
-                                             << (highs - needed_highs))
-                      : 0;  // shift to keep needed highs
-        countpA = needed_highs - countpB;
-      }
-      leftOverRank = (sym & 1) ? countpB : countpA;
-    }
-    
     int64_t result = preBlockRank + wholeWordRank + leftOverRank + sym_rank +
                      super_sum + ub_sum;
-    
+
     return result;
   }
 

@@ -8,8 +8,8 @@
 // The blocked correction set with fixed block size
 // #include "BlockedCorrectionSetsConstant.hh"
 // The Fixed block size blocked correction set with more corrections packed into
-// one word only, subsets per block 2^6
-#include "BlockedCorrectionSetsConstantWordPacked6.hh"
+// one word only, subsets per block 2^7
+#include "BlockedCorrectionSetsConstantWordPacked7.hh"
 #include "Pred16.hh"
 #include "Pred8v2.hh"
 #include "globals.hh"
@@ -18,15 +18,15 @@ namespace sbwt {
 
 using namespace std;
 
-template <typename bitvector_t, typename rank_support_t>
-class SubsetFixedBlockCorrectionSetsRank3 {
+template <typename fixed_block_correction_sets_t,typename bitvector_t, typename rank_support_t>
+class SubsetFixedBlockCorrectionSetsRank7 {
   /* X_bitvector_type nonsingleton_sets;
   X_bitvector_rank_type nonsingleton_sets_rs; */
 
  public:
-  uint64_t _logb = 6;
+  uint64_t _logb = 7;
   uint64_t _b = (uint64_t)1 << _logb;  // number of symbols per block
-  BlockedCorrectionSetsBase4Rank67<4> the_data_structure;
+  fixed_block_correction_sets_t the_data_structure;
 
   // Count of character c in subsets up to pos, not including pos
   int64_t rank(int64_t pos, char c) const {
@@ -57,6 +57,10 @@ class SubsetFixedBlockCorrectionSetsRank3 {
     return result;
   }
 
+  int64_t rank_by_charidx(int64_t pos, int64_t char_idx) const {
+    return the_data_structure.rank(pos, char_idx);
+  }
+
   bool contains(int64_t pos, char c) const {
     // TODO: faster
     int64_t r1 = this->rank(pos, c);
@@ -64,9 +68,9 @@ class SubsetFixedBlockCorrectionSetsRank3 {
     return r1 != r2;
   }
 
-  SubsetFixedBlockCorrectionSetsRank3() {}
+  SubsetFixedBlockCorrectionSetsRank7() {}
 
-  SubsetFixedBlockCorrectionSetsRank3(const sdsl::bit_vector& A_bits,
+  SubsetFixedBlockCorrectionSetsRank7(const sdsl::bit_vector& A_bits,
                                       const sdsl::bit_vector& C_bits,
                                       const sdsl::bit_vector& G_bits,
                                       const sdsl::bit_vector& T_bits) {
@@ -163,7 +167,7 @@ class SubsetFixedBlockCorrectionSetsRank3 {
     correction_set_sizes[block_idx * 4 + 2] = correction_Set_G.size();
     correction_set_sizes[block_idx * 4 + 3] = correction_Set_T.size();
 
-    the_data_structure = BlockedCorrectionSetsBase4Rank67<4>(
+    the_data_structure = fixed_block_correction_sets_t(
         Y_str, correction_Set_A, correction_Set_C, correction_Set_G,
         correction_Set_T, correction_set_sizes);
 
@@ -225,14 +229,14 @@ class SubsetFixedBlockCorrectionSetsRank3 {
 
   void load(istream& is) { the_data_structure.load(is); }
 
-  SubsetFixedBlockCorrectionSetsRank3(
-      const SubsetFixedBlockCorrectionSetsRank3& other) {
+  SubsetFixedBlockCorrectionSetsRank7(
+      const SubsetFixedBlockCorrectionSetsRank7& other) {
     assert(&other != this);  // What on earth are you trying to do?
     operator=(other);
   }
 
-  SubsetFixedBlockCorrectionSetsRank3& operator=(
-      const SubsetFixedBlockCorrectionSetsRank3& other) {
+  SubsetFixedBlockCorrectionSetsRank7& operator=(
+      const SubsetFixedBlockCorrectionSetsRank7& other) {
     if (&other != this) {
       this->the_data_structure = other.the_data_structure;
       return *this;

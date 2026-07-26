@@ -11,28 +11,30 @@ using namespace std;
 
 std::vector<std::string> get_available_variants() {
   return {"plain-matrix",
-          "rrr-matrix",
           "mef-matrix",
           "plain-split",
-          "rrr-split",
           "mef-split",
-          "plain-concat",
-          "mef-concat",
-          "plain-subsetwt",
-          "rrr-subsetwt",
-          "new-concat",
+          "ef-split",
+          "pred8-WT-split",
+          "pino-WT-split",
+          "pred8-split-packed",
+          "pred8-split-w-packed",
+          "pred8-split-transposed",
+          "pino-split-transposed",
           "correction-sets",
-          "split-smaller-size",
-          "concat-split-lengths",
-          "new-plain-concat",
-          "new-split",
           "blocked-correction-sets",
-          "fixed-block-correction-sets1",
-          "fixed-block-correction-sets2",
-          "fixed-block-correction-sets3",
+          "fixed-block-correction-setsA-smaller",
+          "fixed-block-correction-setsA",
+          "fixed-block-correction-setsB",
+          "fixed-block-correction-setsC",
           "blocked8-split",
           "blocked9-split",
-          "pred8-split"};
+          /* "new-concat",
+          "split-smaller-size",
+          "concat-split-lengths",
+          "fixed-block-correction-setsB-smaller",
+          "fixed-block-correction-setsC-smaller",
+          "concat-correction-set" */};
 }
 
 // Return the format, or throws if not all files have the same format
@@ -228,11 +230,6 @@ int build_main(int argc, char** argv) {
     matrixboss_plain.do_kmer_prefix_precalc(precalc_length);
     bytes_written = matrixboss_plain.serialize(out.stream);
   }
-  if (variant == "rrr-matrix") {
-    sbwt::rrr_matrix_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits, ssupport, k,
-                                 n_kmers, precalc_length);
-    bytes_written = sbwt.serialize(out.stream);
-  }
   if (variant == "mef-matrix") {
     sbwt::mef_matrix_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits, ssupport, k,
                                  n_kmers, precalc_length);
@@ -243,39 +240,14 @@ int build_main(int argc, char** argv) {
                                   n_kmers, precalc_length);
     bytes_written = sbwt.serialize(out.stream);
   }
-  if (variant == "rrr-split") {
-    sbwt::rrr_split_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits, ssupport, k,
-                                n_kmers, precalc_length);
-    bytes_written = sbwt.serialize(out.stream);
-  }
   if (variant == "mef-split") {
     sbwt::mef_split_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits, ssupport, k,
                                 n_kmers, precalc_length);
     bytes_written = sbwt.serialize(out.stream);
   }
-  if (variant == "plain-concat") {
-    sbwt::plain_concat_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits, ssupport, k,
-                                   n_kmers, precalc_length);
-    bytes_written = sbwt.serialize(out.stream);
-  }
-  if (variant == "mef-concat") {
-    sbwt::mef_concat_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits, ssupport, k,
-                                 n_kmers, precalc_length);
-    bytes_written = sbwt.serialize(out.stream);
-  }
-  if (variant == "plain-subsetwt") {
-    sbwt::plain_sswt_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits, ssupport, k,
-                                 n_kmers, precalc_length);
-    bytes_written = sbwt.serialize(out.stream);
-  }
-  if (variant == "rrr-subsetwt") {
-    sbwt::rrr_sswt_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits, ssupport, k,
+  if (variant == "ef-split") {
+    sbwt::ef_split_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits, ssupport, k,
                                n_kmers, precalc_length);
-    bytes_written = sbwt.serialize(out.stream);
-  }
-  if (variant == "new-concat") {
-    sbwt::new_concat_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits, ssupport, k,
-                                 n_kmers, precalc_length);
     bytes_written = sbwt.serialize(out.stream);
   }
   if (variant == "correction-sets") {
@@ -283,24 +255,24 @@ int build_main(int argc, char** argv) {
                                       k, n_kmers, precalc_length);
     bytes_written = sbwt.serialize(out.stream);
   }
-  if (variant == "split-smaller-size") {
-    sbwt::split_smaller_size_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits,
-                                         ssupport, k, n_kmers, precalc_length);
-    bytes_written = sbwt.serialize(out.stream);
-  }
-  if (variant == "concat-split-lengths") {
-    sbwt::concat_split_lengths_sbwt_t sbwt(
-        A_bits, C_bits, G_bits, T_bits, ssupport, k, n_kmers, precalc_length);
-    bytes_written = sbwt.serialize(out.stream);
-  }
-  if (variant == "new-plain-concat") {
-    sbwt::new_plain_concat_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits, ssupport,
+  if (variant == "pred8-split-packed") {
+    sbwt::new_split_packed_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits, ssupport,
                                        k, n_kmers, precalc_length);
     bytes_written = sbwt.serialize(out.stream);
   }
-  if (variant == "new-split") {
-    sbwt::new_split_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits, ssupport, k,
-                                n_kmers, precalc_length);
+  if (variant == "pred8-split-w-packed") {
+    sbwt::new_split_w_packed_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits,
+                                         ssupport, k, n_kmers, precalc_length);
+    bytes_written = sbwt.serialize(out.stream);
+  }
+  if (variant == "pred8-split-transposed") {
+    sbwt::new_split_transposed_sbwt_t sbwt(
+        A_bits, C_bits, G_bits, T_bits, ssupport, k, n_kmers, precalc_length);
+    bytes_written = sbwt.serialize(out.stream);
+  }
+  if (variant == "pino-split-transposed") {
+    sbwt::new_split_pino_transposed_sbwt_t sbwt(
+        A_bits, C_bits, G_bits, T_bits, ssupport, k, n_kmers, precalc_length);
     bytes_written = sbwt.serialize(out.stream);
   }
   if (variant == "blocked-correction-sets") {
@@ -308,17 +280,22 @@ int build_main(int argc, char** argv) {
         A_bits, C_bits, G_bits, T_bits, ssupport, k, n_kmers, precalc_length);
     bytes_written = sbwt.serialize(out.stream);
   }
-  if (variant == "fixed-block-correction-sets1") {
+  if (variant == "fixed-block-correction-setsA") {
     sbwt::fixed_block_correction_sets1_sbwt_t sbwt(
         A_bits, C_bits, G_bits, T_bits, ssupport, k, n_kmers, precalc_length);
     bytes_written = sbwt.serialize(out.stream);
   }
-  if (variant == "fixed-block-correction-sets2") {
+  if (variant == "fixed-block-correction-setsA-smaller") {
+    sbwt::fixed_block_correction_sets1_smaller_sbwt_t sbwt(
+        A_bits, C_bits, G_bits, T_bits, ssupport, k, n_kmers, precalc_length);
+    bytes_written = sbwt.serialize(out.stream);
+  }
+  if (variant == "fixed-block-correction-setsB") {
     sbwt::fixed_block_correction_sets2_sbwt_t sbwt(
         A_bits, C_bits, G_bits, T_bits, ssupport, k, n_kmers, precalc_length);
     bytes_written = sbwt.serialize(out.stream);
   }
-  if (variant == "fixed-block-correction-sets3") {
+  if (variant == "fixed-block-correction-setsC") {
     sbwt::fixed_block_correction_sets3_sbwt_t sbwt(
         A_bits, C_bits, G_bits, T_bits, ssupport, k, n_kmers, precalc_length);
     bytes_written = sbwt.serialize(out.stream);
@@ -333,9 +310,14 @@ int build_main(int argc, char** argv) {
                                      k, n_kmers, precalc_length);
     bytes_written = sbwt.serialize(out.stream);
   }
-  if (variant == "pred8-split") {
+  if (variant == "pred8-WT-split") {
     sbwt::pred8_split_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits, ssupport, k,
                                   n_kmers, precalc_length);
+    bytes_written = sbwt.serialize(out.stream);
+  }
+  if (variant == "pino-WT-split") {
+    sbwt::pred8_pino_split_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits, ssupport,
+                                       k, n_kmers, precalc_length);
     bytes_written = sbwt.serialize(out.stream);
   }
 

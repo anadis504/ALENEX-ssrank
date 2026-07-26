@@ -46,10 +46,6 @@ class BlockedSplitBase4RankWordPackedWT {
     // of _b 2-bit symbols. 64 bits for the lengths if the correction sets.
     // The last block has just the prefix sums (128 bits) but no other data.
     _N = nblocks * (2 * _b + 128 + 64) + n_b * 16 + nblocks * 64;
-    cout << "Blocked split for large blocks word packed, delta encoded, "
-            "delta-P array, packed "
-            "prefix sums, block size: "
-         << _b << "\n";
     cerr << "_n: " << _n << " nblocks: " << nblocks << " _N: " << _N
          << " nonsingelton sets: " << n_b << " nsblocks: " << nsblocks << '\n';
     cerr << "log_b: " << _logb << " _b: " << _b
@@ -117,19 +113,8 @@ class BlockedSplitBase4RankWordPackedWT {
                      (block_num / n_blocks_in_ub) * 4))[3] = ub_sums[3];
 
         psums[0] = psums[1] = psums[2] = psums[3] = 0;
-        /* std::cout << "Processing block starting at position " << i
-                  << " set_position " << sets_processed << '\n';
-        cout << "UB prefix sums: " << ub_sums[0] << " " << ub_sums[1] << " "
-             << ub_sums[2] << " " << ub_sums[3] << '\n'; */
       }
       if (sets_processed % _b == 0) {
-        /* cerr << "Block " << block_num << ", #non-singeltons " << block_m <<
-         * ", #singletons " << block_s << ", encoding size " << ((bi -
-         * _p[block_num - 1 + nsblocks * 8]) * sizeof(uint64_t)) << " bytes\n";
-         */
-
-        /* cout << " Start of block, i = " << i << " i / _b = " << (i / _b)
-        << '\n'; */
         if (bi && bi - prev_size < min_words) {
           min_words = bi - prev_size;
         }
@@ -145,9 +130,7 @@ class BlockedSplitBase4RankWordPackedWT {
           uint64_t offset = (uint64_t)bi - p_global_value;
           uint64_t inner_i = block_num % 5;
           offset -= inner_i * p_min;
-          /* cout << "Storing offset: " << offset
-               << " for block_num: " << block_num << " inner_i: " << inner_i
-               << '\n'; */
+
           if (offset > 0xFF) {
             cerr << "Error: offset " << offset << " too large for block_num "
                  << block_num << " inner_i: " << inner_i << '\n';
@@ -157,8 +140,6 @@ class BlockedSplitBase4RankWordPackedWT {
             p_ptr += 1;
           }
         }
-
-        /* _p[block_num + p_ptr] = (uint32_t)bi; */
 
         ((uint16_t*)(_bits.data() + bi))[0] = (uint16_t)psums[0];
         ((uint16_t*)(_bits.data() + bi))[1] = (uint16_t)psums[1];
@@ -173,7 +154,7 @@ class BlockedSplitBase4RankWordPackedWT {
         uint64_t start_pos = block_m ? n_non_singeltons[block_num] : 0;
         // write the 4 first bytes as follows:
         // 10 bits: block_m, next 10 (could be 9) bits: first position, last 4
-        // bits: first column, the 8 bits for the size of this encoding: number
+        // bits: first column, then 8 bits for the size of this encoding: number
         // of words before the singeltons encoding starts
 
         uint64_t curr_pos = block_m ? non_singeltons_positions[start_pos] : 0;
@@ -184,10 +165,6 @@ class BlockedSplitBase4RankWordPackedWT {
           psums[cs] += (bool)(curr_col & (1 << cs));
         }
 
-        /* ((uint16_t*)(_bits.data() + bi))[0] =
-            (uint16_t)block_m << (16 - _logb - 1) | (uint16_t)(prev_pos >> 4);
-        ((uint8_t*)(_bits.data() + bi))[2] =
-            (uint8_t)(prev_pos << 4) | curr_col; */
         ((uint8_t*)(_bits.data() + bi))[0] = (uint8_t)(block_m >> 2);
         ((uint8_t*)(_bits.data() + bi))[1] =
             (uint8_t)(block_m) << 6 | (prev_pos >> 4);
@@ -220,8 +197,6 @@ class BlockedSplitBase4RankWordPackedWT {
               ((uint8_t*)(_bits.data() + bi))[local_i] = (uint8_t)delta;
               bigs_count++;
             }
-            /* cout << "big delta: " << delta << " at block " << block_num
-                 << " position: " << pos << '\n'; */
           } else {
             ((uint8_t*)(_bits.data() + bi))[local_i] =
                 ((uint8_t)delta << 4) | (uint8_t)col;
@@ -238,8 +213,7 @@ class BlockedSplitBase4RankWordPackedWT {
 
         bi += (local_i + 7) / 8;  // move past the words containing the
         // correction sets for this block
-        /* cout << "Pref sums at position " << i << " block index: " << (i / _b)
-        << '\n'; */
+
         block_s = _b - block_m;
         block_num++;
         s_counter = 0;
@@ -248,18 +222,19 @@ class BlockedSplitBase4RankWordPackedWT {
 
       // Now construct the concat string bits
       uint64_t j = 0;
-      uint64_t w = 0;
-      while (j < 32 && (i + j) < seq_size && s_counter < block_s) {
+      uint64_t upper_w = 0;
+      uint64_t lower_w = 0;
+      while (j < 64 && (i + j) < seq_size && s_counter < block_s) {
         uint8_t sym = seq[str_ptr++];
-        if (sigma == 3)
-          sym++;  // for ternary sequences, remap the alphabet from {0,1,2} to
-                  // {1,2,3}
         psums[sym]++;
-        w = w | (((uint64_t)sym) << (2 * j));
+        upper_w = upper_w | (((uint64_t)(bool)(sym & 0x2)) << (j));
+        lower_w = lower_w | (((uint64_t)(bool)(sym & 0x1)) << (j));
         j++;
         s_counter++;
       }
-      _bits[bi] = w;
+      _bits[bi] = upper_w;
+      bi++;
+      _bits[bi] = lower_w;
       bi++;
       i += j;
       sets_processed += j;
@@ -278,14 +253,9 @@ class BlockedSplitBase4RankWordPackedWT {
     _bits.resize(bi + 1);
     _N = _bits.size() * 64;
     _p.resize(p_ptr + 1);  // trim the unused part of the _p array
-    std::cerr << "Finished constructing BlockedSplitBase4RankWordPackedWT"
-              << " of size " << size_in_bytes() << " bytes" << std::endl;
-    std::cerr << "P array size: " << _p.size() * sizeof(uint32_t) << " bytes"
-              << std::endl;
-    cout << "Min words per block: " << min_words
-         << " Max words per block: " << max_words << '\n';
     delete[] psums;
     delete[] super_sums;
+    delete[] ub_sums;
   }
 
   size_t size_in_bytes() const {
@@ -305,32 +275,7 @@ class BlockedSplitBase4RankWordPackedWT {
     cout << '\n';
   }
 
-  inline void count1110(uint64_t w, uint64_t& countpA,
-                        uint64_t& countpB) const {
-    uint64_t w2 = w & 0xAAAAAAAAAAAAAAAA;  // popcnt(w2) == # of 11s + # of 10s
-    uint64_t w3 = (w2 >> 1);
-    w3 = w3 & w;
-    countpA = __builtin_popcountll(w3);
-    countpB = __builtin_popcountll(w2) - countpA;
-  }
-
-  inline void count1110Partial(uint64_t w, uint64_t& countpA, uint64_t& countpB,
-                               uint32_t shift) const {
-    uint64_t w2 = w & 0xAAAAAAAAAAAAAAAA;  // popcnt(w2) == # of 11s + # of 10s
-    uint64_t w3 = (w2 >> 1);
-    w3 = w3 & w;
-    countpA = __builtin_popcountll((w3 << shift) >> (shift - 2));
-    countpB = __builtin_popcountll((w2 << shift) >> (shift - 2)) - countpA;
-  }
-
-  // Rank of symbol in half-open interval [0..pos)
-  int64_t rank(int64_t pos, char symbol) const {
-    uint64_t sym = (uint64_t)symbol;
-    uint64_t super_sum =
-        ((uint64_t*)(_p.data() + 8 * (pos >> _log_superb)))[sym];
-    // uint64_t blockstart = _p[(pos >> _logb) + nsblocks * 8 + nublocks * 4];
-    uint64_t ub_sum =
-        ((uint32_t*)(_p.data() + nsblocks * 8 + 4 * ((pos >> _log_ub))))[sym];
+  uint64_t get_block_start(int64_t pos) const {
     uint64_t block_num = pos >> _logb;
     uint64_t p_global_offset = block_num / 5 * 2 + nsblocks * 8 + nublocks * 4;
     uint64_t blockstart = _p[p_global_offset];
@@ -339,6 +284,41 @@ class BlockedSplitBase4RankWordPackedWT {
       blockstart += ((uint8_t*)(_p.data() + p_global_offset + 1))[inner_i - 1] +
                     inner_i * p_min;
     }
+    return blockstart;
+  }
+
+  void rank_in_payload(const uint64_t* blockwords, int64_t blocki, uint64_t pos,
+                       uint8_t sym, uint64_t& wholeWordRank,
+                       uint64_t& leftOverRank, uint64_t start_pos = 0) const {
+    uint64_t countpA = 0, countpB = 0;
+    for (uint64_t i = start_pos; i < blocki; i += 2) {
+      uint64_t upper_w = blockwords[i];
+      uint64_t lower_w = blockwords[i + 1];
+      upper_w = (sym & 0x2) ? upper_w : ~upper_w;
+      lower_w = (sym & 0x1) ? lower_w : ~lower_w;
+      wholeWordRank += __builtin_popcountll(upper_w & lower_w);
+    }
+
+    if (pos % 64) {  // possibly inspect part of the next word
+      uint64_t upper_w = blockwords[blocki];
+      // compute an appropriate shift
+      uint32_t shift =
+          64 - (pos % 64);  // pos%64 is never 0 inside this if statement
+      uint64_t lower_w = blockwords[blocki + 1];
+      upper_w = (sym & 0x2) ? upper_w : ~upper_w;
+      lower_w = (sym & 0x1) ? lower_w : ~lower_w;
+      leftOverRank = __builtin_popcountll((upper_w & lower_w) << shift);
+    }
+  }
+
+  // Rank of symbol in half-open interval [0..pos)
+  int64_t rank(int64_t pos, uint64_t sym) const {
+    uint64_t super_sum =
+        ((uint64_t*)(_p.data() + 8 * (pos >> _log_superb)))[sym];
+    // uint64_t blockstart = _p[(pos >> _logb) + nsblocks * 8 + nublocks * 4];
+    uint64_t ub_sum =
+        ((uint32_t*)(_p.data() + nsblocks * 8 + 4 * ((pos >> _log_ub))))[sym];
+    uint64_t blockstart = get_block_start(pos);
 
     uint64_t preBlockRank = ((
         uint16_t*)(_bits.data() +
@@ -354,7 +334,6 @@ class BlockedSplitBase4RankWordPackedWT {
     uint32_t encoding_size = block_m / 8 + encoding_diff;
 
     // get the correction
-    uint64_t empties = 0;
     uint64_t sym_rank = 0;
     uint64_t non_singeltons_before_pos = 0;
 
@@ -390,52 +369,13 @@ class BlockedSplitBase4RankWordPackedWT {
     // our pos has to be updated to reflect the fact that we have removed the
     // non-singeltons
     pos -= non_singeltons_before_pos;
-    uint64_t blocki = (pos & (_b - 1)) / 32;
-    uint64_t countpA = 0, countpB = 0, wholeWordRank = 0, leftOverRank = 0;
 
-    if (sym < 2) {
-      for (uint64_t i = 0; i < blocki; i++) {
-        uint64_t w = blockwords[i];
-        w = ~w;
-        count1110(w, countpA, countpB);
-        uint64_t count = countpB;
-        bool x = (sym == 0 || sym == 3);
-        if (x) count = countpA;
-        wholeWordRank += count;
-      }
-      if (pos % 32) {  // possibly inspect part of the next word
-        uint64_t w = blockwords[blocki];
-        // compute an appropriate shift
-        uint32_t shift =
-            64 - 2 * (pos % 32);  // pos%32 is never 0 inside this if statement
-        w = ~w;
-        count1110Partial(w, countpA, countpB, shift);
-        uint64_t count = countpB;
-        bool x = (sym == 0 || sym == 3);
-        if (x) count = countpA;
-        leftOverRank = count;
-      }
-    } else {  // sym >= 2
-      for (uint64_t i = 0; i < blocki; i++) {
-        uint64_t w = blockwords[i];
-        count1110(w, countpA, countpB);
-        uint64_t count = countpB;
-        bool x = (sym == 0 || sym == 3);
-        if (x) count = countpA;
-        wholeWordRank += count;
-      }
-      if (pos % 32) {  // possibly inspect part of the next word
-        uint64_t w = blockwords[blocki];
-        // compute an appropriate shift
-        uint32_t shift =
-            64 - 2 * (pos % 32);  // pos%32 is never 0 inside this if statement
-        count1110Partial(w, countpA, countpB, shift);
-        uint64_t count = countpB;
-        bool x = (sym == 0 || sym == 3);
-        if (x) count = countpA;
-        leftOverRank = count;
-      }
-    }
+    uint64_t blocki =
+        ((pos & (_b - 1)) >> 6)
+        << 1;  // index of word in this block containing the query position
+    uint64_t wholeWordRank = 0, leftOverRank = 0;
+    rank_in_payload(blockwords, blocki, pos, sym, wholeWordRank, leftOverRank);
+  
     int64_t result = preBlockRank + wholeWordRank + leftOverRank + sym_rank +
                      super_sum + ub_sum;
 

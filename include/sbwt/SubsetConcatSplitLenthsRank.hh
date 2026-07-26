@@ -30,7 +30,8 @@ class SubsetConcatSplitLengthsRank {
   bitvector_t multiton_lens;
   rank_support_t multiton_lens_rs;
 
-  Base4RankVectorWordPacked<4> concat;  // The concatenated characters of all subsets
+  Base4RankVectorWordPacked<4>
+      concat;  // The concatenated characters of all subsets
 
   int64_t serialize(ostream& os) const {
     int64_t written = 0;
@@ -130,6 +131,16 @@ class SubsetConcatSplitLengthsRank {
     return result;
   }
 
+  int64_t rank_by_charidx(int64_t pos, int64_t char_idx) const {
+    uint64_t nnz = nonsingleton_sets.rank(pos);
+    uint64_t singleton_pos = pos - nnz;
+    uint64_t empty_rank = empty_sets_rs.rank(nnz);
+    uint64_t multiton_n = nnz - empty_rank;
+    uint64_t lens_sum = 2 * multiton_n + multiton_lens_rs.rank(multiton_n * 2);
+    int64_t result = concat.rank(lens_sum + singleton_pos, char_idx);
+    return result;
+  }
+
   bool contains(int64_t pos, char c) const {
     // TODO: faster
     int64_t r1 = this->rank(pos, c);
@@ -223,7 +234,7 @@ class SubsetConcatSplitLengthsRank {
     sdsl::util::init_support(multiton_lens_rs, &multiton_lens);
     concat = Base4RankVectorWordPacked<4>(Y_str);
 
-    rank_support_t A_bits_rs;
+    /* rank_support_t A_bits_rs;
     rank_support_t C_bits_rs;
     rank_support_t G_bits_rs;
     rank_support_t T_bits_rs;
@@ -259,7 +270,7 @@ class SubsetConcatSplitLengthsRank {
         std::cerr << "Rank mismatch at position " << i << " for T: " << rT
                   << " vs " << ownT << '\n';
       }
-    }
+    } */
   }
 };
 

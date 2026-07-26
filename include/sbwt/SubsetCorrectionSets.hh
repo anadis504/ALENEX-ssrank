@@ -7,26 +7,24 @@
 
 #include "Base4RankVector.hh"
 #include "Base4RankVectorWordPacked.hh"
-#include "Pred16.hh"
-#include "Pred16_BS.hh"
-#include "Pred8v2.hh"
 #include "globals.hh"
 
 namespace sbwt {
 
 using namespace std;
 
-template <typename bitvector_t, typename rank_support_t>
+template <typename quadrank_structure_t, typename bitvector_t,
+          typename rank_support_t, typename pred8_t, typename pred16_t>
 class SubsetCorrectionSetsRank {
   /* X_bitvector_type nonsingleton_sets;
   X_bitvector_rank_type nonsingleton_sets_rs; */
 
  public:
-  Base4RankVectorWordPacked<4> concat;
-  Pred8v2 correction_Set_A_pred;
-  Pred16_BS correction_Set_C_pred;
-  Pred16_BS correction_Set_G_pred;
-  Pred16_BS correction_Set_T_pred;
+  quadrank_structure_t concat;
+  pred8_t correction_Set_A_pred;
+  pred16_t correction_Set_C_pred;
+  pred16_t correction_Set_G_pred;
+  pred16_t correction_Set_T_pred;
 
   // Count of character c in subsets up to pos, not including pos
   int64_t rank(int64_t pos, char c) const {
@@ -62,6 +60,30 @@ class SubsetCorrectionSetsRank {
     return pre_result + correction;
   }
 
+  int64_t rank_by_charidx(int64_t pos, int64_t char_idx) const {
+    int64_t correction = 0;
+    int64_t pre_result = concat.rank(pos, char_idx);
+    switch (char_idx) {
+      case 0:
+        correction = -correction_Set_A_pred.rank(pos);
+        break;
+      case 1:
+        correction = correction_Set_C_pred.rank(pos);
+        break;
+      case 2:
+        correction = correction_Set_G_pred.rank(pos);
+        break;
+      case 3:
+        correction = correction_Set_T_pred.rank(pos);
+        break;
+      default:
+        cerr << "Error: Rank called with non-ACGT character: " << char_idx
+             << endl;
+        exit(1);
+    }
+    return pre_result + correction;
+  }
+
   bool contains(int64_t pos, char c) const {
     // TODO: faster
     int64_t r1 = this->rank(pos, c);
@@ -72,9 +94,9 @@ class SubsetCorrectionSetsRank {
   SubsetCorrectionSetsRank() {}
 
   SubsetCorrectionSetsRank(const sdsl::bit_vector& A_bits,
-                                const sdsl::bit_vector& C_bits,
-                                const sdsl::bit_vector& G_bits,
-                                const sdsl::bit_vector& T_bits) {
+                           const sdsl::bit_vector& C_bits,
+                           const sdsl::bit_vector& G_bits,
+                           const sdsl::bit_vector& T_bits) {
     assert(A_bits.size() == C_bits.size() && C_bits.size() == G_bits.size() &&
            G_bits.size() == T_bits.size());
 
@@ -148,15 +170,15 @@ class SubsetCorrectionSetsRank {
       }
     }
 
-    concat = Base4RankVectorWordPacked<4>(Y_str);
+    concat = quadrank_structure_t(Y_str);
 
-    correction_Set_A_pred = Pred8v2(correction_Set_A);
-    correction_Set_C_pred = Pred16_BS(correction_Set_C);
-    correction_Set_G_pred = Pred16_BS(correction_Set_G);
-    correction_Set_T_pred = Pred16_BS(correction_Set_T);
+    correction_Set_A_pred = pred8_t(correction_Set_A);
+    correction_Set_C_pred = pred16_t(correction_Set_C);
+    correction_Set_G_pred = pred16_t(correction_Set_G);
+    correction_Set_T_pred = pred16_t(correction_Set_T);
 
     // For debugging: verify that ranks match
-    /* rank_support_t A_bits_rs;
+    rank_support_t A_bits_rs;
     rank_support_t C_bits_rs;
     rank_support_t G_bits_rs;
     rank_support_t T_bits_rs;
@@ -165,7 +187,7 @@ class SubsetCorrectionSetsRank {
     sdsl::util::init_support(C_bits_rs, &(C_bits));
     sdsl::util::init_support(G_bits_rs, &(G_bits));
     sdsl::util::init_support(T_bits_rs, &(T_bits));
-
+    uint64_t wrongs = 0;
     for (int64_t i = 0; i < n; i++) {
       int64_t rA = A_bits_rs.rank(i);
       int64_t rC = C_bits_rs.rank(i);
@@ -179,26 +201,31 @@ class SubsetCorrectionSetsRank {
       if (!(rA == ownA)) {
         std::cerr << "Rank mismatch at position " << i << " for A: " << rA
                   << " vs " << ownA << '\n';
+        wrongs++;
       }
       if (!(rC == ownC)) {
         std::cerr << "Rank mismatch at position " << i << " for C: " << rC
                   << " vs " << ownC << '\n';
+        wrongs++;
       }
       if (!(rG == ownG)) {
         std::cerr << "Rank mismatch at position " << i << " for G: " << rG
                   << " vs " << ownG << '\n';
+        wrongs++;
       }
       if (!(rT == ownT)) {
         std::cerr << "Rank mismatch at position " << i << " for T: " << rT
                   << " vs " << ownT << '\n';
+        wrongs++;
       }
-    } */
+      if (wrongs > 20) exit(1);
+    }
   }
 
   int64_t serialize(ostream& os) const {
     int64_t tmp, written = 0;
     written += concat.serialize(os);
-    std::cout << "Serialized concat " << written << " bytes\n";
+    std::cout << "Serialized Quadrank_string " << written << " bytes\n";
     tmp = correction_Set_A_pred.serialize(os);
     std::cout << "Serialized correction_Set_A_pred " << tmp << " bytes\n";
     written += tmp;
@@ -227,8 +254,7 @@ class SubsetCorrectionSetsRank {
     operator=(other);
   }
 
-  SubsetCorrectionSetsRank& operator=(
-      const SubsetCorrectionSetsRank& other) {
+  SubsetCorrectionSetsRank& operator=(const SubsetCorrectionSetsRank& other) {
     if (&other != this) {
       this->concat = other.concat;
       this->correction_Set_A_pred = other.correction_Set_A_pred;

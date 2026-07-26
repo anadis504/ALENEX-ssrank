@@ -74,7 +74,7 @@ class Pred8v2 {
           }
        }
        _X[_nblocks] = (((_X[_nblocks-1] >> 1) + _C[_nblocks-1])<<1);
-       cerr << "_X[_nblocks]: " << _X[_nblocks] << '\n';
+       cerr << "_X[_nblocks]: " << (_X[_nblocks]>>1) << '\n';
     }
 
 
@@ -155,9 +155,8 @@ class Pred8v2 {
        this->_min = other._min;
        this->_nblocks = other._nblocks;
        this->_nActiveBuckets = other._nActiveBuckets;
-       this->_X = _X;
-       //this->_C = _C;
-       this->_Y = _Y;
+       this->_X = other._X;
+       this->_Y = other._Y;
     }
 
    private:

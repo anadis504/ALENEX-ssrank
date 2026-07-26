@@ -35,6 +35,8 @@ class SubsetSplitRank {
       Z_T;  // The row of 'T' in the Z matrix, in columns with != 1 one-bit
 
   X_bitvector_rank_t X_rs;
+
+  Z_rank_support_t* rank_supports[4];
   Z_rank_support_t Z_A_rs;
   Z_rank_support_t Z_C_rs;
   Z_rank_support_t Z_G_rs;
@@ -100,6 +102,10 @@ class SubsetSplitRank {
       Z_G_rs.set_vector(&Z_G);
       Z_T_rs.set_vector(&Z_T);
     }
+    this->rank_supports[0] = &(this->Z_A_rs);
+    this->rank_supports[1] = &(this->Z_C_rs);
+    this->rank_supports[2] = &(this->Z_G_rs);
+    this->rank_supports[3] = &(this->Z_T_rs);
   }
 
   SubsetSplitRank() {}
@@ -158,10 +164,54 @@ class SubsetSplitRank {
     Z_T = Z_bitvector_t(Z_T_plain);
 
     sdsl::util::init_support(X_rs, &X);
+    
     sdsl::util::init_support(Z_A_rs, &Z_A);
     sdsl::util::init_support(Z_C_rs, &Z_C);
     sdsl::util::init_support(Z_G_rs, &Z_G);
     sdsl::util::init_support(Z_T_rs, &Z_T);
+    this->rank_supports[0] = &(this->Z_A_rs);
+    this->rank_supports[1] = &(this->Z_C_rs);
+    this->rank_supports[2] = &(this->Z_G_rs);
+    this->rank_supports[3] = &(this->Z_T_rs);
+
+    // For debugging: verify that ranks match
+    /* Z_rank_support_t A_bits_rs;
+    Z_rank_support_t C_bits_rs;
+    Z_rank_support_t G_bits_rs;
+    Z_rank_support_t T_bits_rs;
+
+    sdsl::util::init_support(A_bits_rs, &(A_bits));
+    sdsl::util::init_support(C_bits_rs, &(C_bits));
+    sdsl::util::init_support(G_bits_rs, &(G_bits));
+    sdsl::util::init_support(T_bits_rs, &(T_bits));
+
+    for (int64_t i = 0; i < n; i++) {
+      int64_t rA = A_bits_rs.rank(i);
+      int64_t rC = C_bits_rs.rank(i);
+      int64_t rG = G_bits_rs.rank(i);
+      int64_t rT = T_bits_rs.rank(i);
+      // std::cout << A_bits[i] << C_bits[i] << G_bits[i] << T_bits[i] << '\n';
+      int64_t ownA = this->rank(i, 'A');
+      int64_t ownC = this->rank(i, 'C');
+      int64_t ownG = this->rank(i, 'G');
+      int64_t ownT = this->rank(i, 'T');
+      if (!(rA == ownA)) {
+        std::cerr << "Rank mismatch at position " << i << " for A: " << rA
+                  << " vs " << ownA << '\n';
+      }
+      if (!(rC == ownC)) {
+        std::cerr << "Rank mismatch at position " << i << " for C: " << rC
+                  << " vs " << ownC << '\n';
+      }
+      if (!(rG == ownG)) {
+        std::cerr << "Rank mismatch at position " << i << " for G: " << rG
+                  << " vs " << ownG << '\n';
+      }
+      if (!(rT == ownT)) {
+        std::cerr << "Rank mismatch at position " << i << " for T: " << rT
+                  << " vs " << ownT << '\n';
+      }
+    } */
   }
 
   SubsetSplitRank(const SubsetSplitRank& other) {
@@ -190,6 +240,11 @@ class SubsetSplitRank {
       this->Z_G_rs.set_vector(&(this->Z_G));
       this->Z_T_rs.set_vector(&(this->Z_T));
 
+      this->rank_supports[0] = &(this->Z_A_rs);
+      this->rank_supports[1] = &(this->Z_C_rs);
+      this->rank_supports[2] = &(this->Z_G_rs);
+      this->rank_supports[3] = &(this->Z_T_rs);
+
       return *this;
     } else
       return *this;  // Assignment to self -> do nothing.
@@ -210,6 +265,26 @@ class SubsetSplitRank {
         return Y_count + Z_T_rs.rank(rank1);
       default:
         cerr << "Error: Rank called with non-ACGT character: " << c << endl;
+        exit(1);
+    }
+  }
+
+  int64_t rank_by_charidx(int64_t pos, int64_t char_idx) const {
+    int64_t rank1 = X_rs.rank(pos);
+    int64_t rank0 = pos - rank1;
+    int64_t Y_count = Y.rank(rank0, char_idx_to_DNA(char_idx));
+    switch (char_idx) {
+      case 0:
+        return Y_count + Z_A_rs.rank(rank1);
+      case 1:
+        return Y_count + Z_C_rs.rank(rank1);
+      case 2:
+        return Y_count + Z_G_rs.rank(rank1);
+      case 3:
+        return Y_count + Z_T_rs.rank(rank1);
+      default:
+        cerr << "Error: Rank called with non-ACGT character: " << char_idx
+             << endl;
         exit(1);
     }
   }

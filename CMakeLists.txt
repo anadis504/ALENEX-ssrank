@@ -110,6 +110,8 @@ find_package(Threads REQUIRED)
 add_subdirectory(${PROJECT_SOURCE_DIR}/sdsl-lite
   ${PROJECT_BINARY_DIR}/external/sdsl-lite/build)
 
+target_compile_options(sdsl PRIVATE -march=native -funroll-loops)
+
 add_subdirectory(${PROJECT_SOURCE_DIR}/KMC
   ${PROJECT_BINARY_DIR}/external/KMC/build)
 
@@ -137,6 +139,9 @@ add_executable(sbwt
   src/CLI/sbwt_ascii_export.cpp
   src/CLI/sbwt_s_rank_queries.cpp
   ${SBWT_SOURCES})
+
+target_compile_options(sbwt PRIVATE -march=native -funroll-loops)
+
 target_include_directories(sbwt PRIVATE
 ${PROJECT_SOURCE_DIR}/include/sbwt
 ${PROJECT_BINARY_DIR}/include # version.h is here
@@ -216,6 +221,9 @@ endif()
 
 
 add_library(sbwt_static STATIC ${SBWT_SOURCES})
+
+target_compile_options(sbwt_static PRIVATE -march=native -funroll-loops)
+
 target_include_directories(sbwt_static PRIVATE
 ${PROJECT_SOURCE_DIR}/include/sbwt
 ${PROJECT_BINARY_DIR}/include # version.h is here

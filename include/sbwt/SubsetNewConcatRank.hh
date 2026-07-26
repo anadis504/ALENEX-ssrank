@@ -6,9 +6,11 @@
 #include <vector>
 
 #include "Base4RankVector.hh"
+#include "Base4RankVectorTransposed.hh"
 #include "Base4RankVectorWordPacked.hh"
-#include "globals.hh"
+#include "Base4SummingRankVectorTransposed.hh"
 #include "Pred8v2.hh"
+#include "globals.hh"
 
 namespace sbwt {
 
@@ -16,19 +18,9 @@ using namespace std;
 
 template <typename bitvector_t, typename rank_support_t>
 class SubsetNewConcatRank {
-  typedef mod_ef_vector<> X_bitvector_type;
-  typedef mod_ef_vector<>::rank_1_type X_bitvector_rank_type;
-
-  /* X_bitvector_type nonsingleton_sets;
-  X_bitvector_rank_type nonsingleton_sets_rs; */
-  /* bitvector_t nonsingleton_sets;
-  rank_support_t nonsingleton_sets_rs; */
   Pred8v2 nonsingleton_sets;
-  Base4RankVectorWordPacked<4>
-      nonsingleton_lens;  // NOT YET!!! will be divided into 64 bit words, first
-                          // word containing the higher bits of the encoded
-                          // lengths. Second word containing the lower bits.
-  Base4RankVectorWordPacked<4>
+  Base4SummingRankVectorTransposed<4> nonsingleton_lens;
+  Base4RankVectorTransposed<4>
       concat;  // The concatenated characters of all subsets
 
  public:
@@ -61,8 +53,17 @@ class SubsetNewConcatRank {
         exit(1);
     }
     int64_t result = concat.rank(lens_sum + singleton_pos, c_coded);
-    /* std::cout << "Final result for rank(" << pos << "," << (int)c << ") is "
-              << result << '\n'; */
+
+    return result;
+  }
+
+  int64_t rank_by_charidx(int64_t pos, int64_t char_idx) const {
+    uint64_t nnz = nonsingleton_sets.rank(pos);
+    uint64_t singleton_pos = pos - nnz;
+    int64_t lens_sum = nonsingleton_lens.sum_of_ranks(nnz);
+
+    int64_t result = concat.rank(lens_sum + singleton_pos, char_idx);
+
     return result;
   }
 
@@ -139,8 +140,8 @@ class SubsetNewConcatRank {
     /* nonsingleton_sets = bitvector_t(X_plain);
     sdsl::util::init_support(nonsingleton_sets_rs, &nonsingleton_sets); */
     nonsingleton_sets = Pred8v2(nonsingleton_sets_indices);
-    nonsingleton_lens = Base4RankVectorWordPacked<4>(lens_vec);
-    concat = Base4RankVectorWordPacked<4>(Y_str);
+    nonsingleton_lens = Base4SummingRankVectorTransposed<4>(lens_vec);
+    concat = Base4RankVectorTransposed<4>(Y_str);
 
     /* rank_support_t A_bits_rs;
     rank_support_t C_bits_rs;
@@ -179,7 +180,6 @@ class SubsetNewConcatRank {
                   << " vs " << ownT << '\n';
       }
     } */
-    
   }
 
   int64_t serialize(ostream& os) const {
@@ -187,11 +187,13 @@ class SubsetNewConcatRank {
     written += concat.serialize(os);
     std::cout << "Serialized concat " << written << " bytes\n";
     written += nonsingleton_sets.serialize(os);
-    std::cout << "Serialized nonsingleton_sets " << written << " bytes\n";
+    std::cout << "Serialized nonsingleton_sets "
+              << nonsingleton_sets.sizeInBytes() << " bytes\n";
     /* written += nonsingleton_sets_rs.serialize(os);
     std::cout << "Serialized nonsingleton_sets_rs " << written << " bytes\n"; */
     written += nonsingleton_lens.serialize(os);
-    std::cout << "Serialized nonsingleton_lens " << written << " bytes\n";
+    std::cout << "Serialized nonsingleton_lens "
+              << nonsingleton_lens.size_in_bytes() << " bytes\n";
     return written;
   }
 
@@ -206,6 +208,15 @@ class SubsetNewConcatRank {
       nonsingleton_sets_rs.set_vector(&nonsingleton_sets);
     } */
     nonsingleton_lens.load(is);
+    cout << "Loaded SubsetNewConcatRank with concat size: "
+         << concat.size_in_bytes()
+         << " nonsingleton_sets size: " << nonsingleton_sets.sizeInBytes()
+         << " nonsingleton_lens size: " << nonsingleton_lens.size_in_bytes()
+         << '\n';
+    cout << "For nonsingelton_lens using " << typeid(nonsingleton_lens).name()
+         << '\n';
+    cout << "For nonsingelton_sets using " << typeid(nonsingleton_sets).name()
+         << '\n';
   }
 
   SubsetNewConcatRank(const SubsetNewConcatRank& other) {

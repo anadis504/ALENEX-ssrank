@@ -221,28 +221,18 @@ class BlockedCorrectionSetsBase4RankWordPackedByte {
       uint64_t j = 0;
       uint64_t upper_w = 0;
       uint64_t lower_w = 0;
-      uint64_t lower_w_tmp = 0;
       int smalls = 0;
       int highs = 0;
       while (j < 64 && (i + j) < _n) {
         uint8_t sym = seq[i + j];
-
-        if (sigma == 3)
-          sym++;  // for ternary sequences, remap the alphabet from {0,1,2} to
-                  // {1,2,3}
         psums[sym]++;
 
-        // w = w | (((uint64_t)sym) << (2 * j));
         upper_w = upper_w | (((uint64_t)(bool)(sym & 0x2)) << (j));
-        if (!(sym & 0x2)) {
-          lower_w = lower_w | (((uint64_t)(sym & 0x1)) << (smalls++));
-        } else {
-          lower_w_tmp = lower_w_tmp | (((uint64_t)(sym & 0x1)) << (highs++));
-        }
+        lower_w = lower_w | (((uint64_t)(bool)(sym & 0x1)) << (j));
+
         j++;
       }
 
-      lower_w = lower_w | (lower_w_tmp << (64 - highs));
       _bits[bi] = upper_w;
       bi++;
       _bits[bi] = lower_w;
@@ -298,8 +288,7 @@ class BlockedCorrectionSetsBase4RankWordPackedByte {
   }
 
   // Rank of symbol in half-open interval [0..pos)
-  int64_t rank(int64_t pos, char symbol) const {
-    uint64_t sym = (uint64_t)symbol;
+  int64_t rank(int64_t pos, uint64_t sym) const {
     uint64_t super_sum =
         ((uint64_t*)(_p.data() + 8 * (pos >> _log_superb)))[sym];
     // uint64_t blockstart = _p[(pos >> _logb) + nsblocks * 8 + nublocks * 4];
@@ -354,9 +343,28 @@ class BlockedCorrectionSetsBase4RankWordPackedByte {
         ((pos & (_b - 1)) / 64) *
         2;  // index of word in this block containing the query position
 
-    uint64_t countpA = 0, countpB = 0, wholeWordRank = 0, leftOverRank = 0;
+    uint64_t wholeWordRank = 0, leftOverRank = 0;
 
     for (uint64_t i = 0; i < blocki; i += 2) {
+      uint64_t upper_w = blockwords[i];
+      uint64_t lower_w = blockwords[i + 1];
+      upper_w = (sym & 0x2) ? upper_w : ~upper_w;
+      lower_w = (sym & 0x1) ? lower_w : ~lower_w;
+      wholeWordRank += __builtin_popcountll(upper_w & lower_w);
+    }
+
+    if (pos % 64) {  // possibly inspect part of the next word
+      uint64_t upper_w = blockwords[blocki];
+      // compute an appropriate shift
+      uint32_t shift =
+          64 - (pos % 64);  // pos%64 is never 0 inside this if statement
+      uint64_t lower_w = blockwords[blocki + 1];
+      upper_w = (sym & 0x2) ? upper_w : ~upper_w;
+      lower_w = (sym & 0x1) ? lower_w : ~lower_w;
+      leftOverRank = __builtin_popcountll((upper_w & lower_w) << shift);
+    }
+
+    /* for (uint64_t i = 0; i < blocki; i += 2) {
       uint64_t upper_w = blockwords[i];
       uint64_t lower_w = blockwords[i + 1];
       uint64_t highs = __builtin_popcountll(upper_w);
@@ -398,7 +406,7 @@ class BlockedCorrectionSetsBase4RankWordPackedByte {
         countpA = needed_highs - countpB;
       }
       leftOverRank = (sym & 1) ? countpB : countpA;
-    }
+    } */
     int64_t result = preBlockRank + wholeWordRank + leftOverRank +
                      (sym == 0 ? -correction : correction) + super_sum + ub_sum;
 

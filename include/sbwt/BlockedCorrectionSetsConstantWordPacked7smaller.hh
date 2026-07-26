@@ -6,29 +6,37 @@
 using namespace std;
 
 template <int64_t sigma>
-class FixedBlockedCorrectionSetsBase4Rank2 {
-  uint64_t _logb = 7;
-  uint64_t _b = (uint64_t)1 << _logb;  // number of symbols per block
-  uint64_t _log_superb = 32;           // make this fit the blocksize
-  uint64_t _super_b = (uint64_t)1 << _log_superb;
+class FixedBlockedCorrectionSetsBase4Rank1_ {
+  static constexpr uint64_t _logb = 7;
+  static constexpr uint64_t _b = (uint64_t)1
+                                 << _logb;     // number of symbols per block
+  static constexpr uint64_t _log_superb = 32;  // make this fit the blocksize
+  static constexpr uint64_t _super_b = (uint64_t)1 << _log_superb;
   uint64_t _n;
   uint64_t _N;
   uint64_t nsblocks;  // pointer just after the superblocks
   vector<uint64_t> _bits;
   vector<uint64_t> _bits_overflown;
   vector<uint32_t> _p;
-  uint64_t n_blocks_in_superblock = _super_b / _b;
+  vector<uint8_t> _prefixsums;
+
   uint64_t _log_ub = 16;
   uint64_t _ub = (uint64_t)1 << _log_ub;
   uint64_t n_blocks_in_ub = _ub / _b;
   uint64_t nublocks;
-  uint64_t p_min = 4;
-  uint64_t block_constant = 7;
+
+  static constexpr uint64_t block_constant = 6 - 1;
+  static constexpr uint64_t CS_CONSTANT = 7;
+
+  static constexpr size_t sums_per_prefix = 16;
+  static constexpr size_t absoluteBytes = sigma * sizeof(uint16_t);
+  static constexpr size_t groupBytes =
+      absoluteBytes + sigma * (sums_per_prefix - 1);
 
  public:
-  FixedBlockedCorrectionSetsBase4Rank2() {};
+  FixedBlockedCorrectionSetsBase4Rank1_() {};
 
-  FixedBlockedCorrectionSetsBase4Rank2(
+  FixedBlockedCorrectionSetsBase4Rank1_(
       const std::string& seq, std::vector<uint64_t> correction_Set_A,
       std::vector<uint64_t> correction_Set_C,
       std::vector<uint64_t> correction_Set_G,
@@ -73,12 +81,19 @@ class FixedBlockedCorrectionSetsBase4Rank2 {
     _p.reserve(nblocks + 2 + nsblocks * 8 + nblocks * 20);
     _p.resize(nblocks + 2 + nsblocks * 8 + nblocks * 20);
 
+    size_t prefix_groups = (nblocks + sums_per_prefix - 1) / sums_per_prefix;
+
+    _prefixsums.resize(prefix_groups * groupBytes);
+
     uint64_t* psums = new uint64_t[4];
     psums[0] = psums[1] = psums[2] = psums[3] = 0;
     uint64_t* super_sums = new uint64_t[4];
     super_sums[0] = super_sums[1] = super_sums[2] = super_sums[3] = 0;
     uint32_t* ub_sums = new uint32_t[4];
     ub_sums[0] = ub_sums[1] = ub_sums[2] = ub_sums[3] = 0;
+
+    uint32_t* local_sums = new uint32_t[4];
+    local_sums[0] = local_sums[1] = local_sums[2] = local_sums[3] = 0;
 
     uint64_t bi = 0;
     uint16_t* correction_set_lengths = new uint16_t[4];
@@ -144,23 +159,46 @@ class FixedBlockedCorrectionSetsBase4Rank2 {
 
         prev_size = bi;
 
+        // cout << "p_ptr " << p_ptr << "\n";
+
         for (int64_t cs = 0; cs < 4; cs++) {
           int64_t correction = (cs == 0 ? -correction_set_lengths[cs]
                                         : correction_set_lengths[cs]);
           psums[cs] += correction;
         }
-        ((uint16_t*)(_bits.data() + bi))[0] = (uint16_t)psums[0];
-        ((uint16_t*)(_bits.data() + bi))[1] = (uint16_t)psums[1];
-        ((uint16_t*)(_bits.data() + bi))[2] = (uint16_t)psums[2];
-        ((uint16_t*)(_bits.data() + bi))[3] = (uint16_t)psums[3];
 
-        bi++;  // move past the words containing the
+        size_t pref_ind = block_num / sums_per_prefix;
+        size_t inner_pref_ind = block_num % sums_per_prefix;
+        if (block_num % sums_per_prefix == 0) {
+          size_t groupBase = pref_ind * groupBytes;
+
+          auto* pref16 =
+              reinterpret_cast<uint16_t*>(_prefixsums.data() + groupBase);
+
+          for (size_t s = 0; s < sigma; ++s) {
+            pref16[s] = static_cast<uint16_t>(psums[s]);
+            local_sums[s] = psums[s];
+          }
+        } else {
+          size_t deltaBase = pref_ind * groupBytes + absoluteBytes;
+
+          for (size_t s = 0; s < sigma; ++s) {
+            auto delta = psums[s] - local_sums[s];
+            assert(delta <= UINT8_MAX);
+
+            _prefixsums[deltaBase + s * (sums_per_prefix - 1) + inner_pref_ind -
+                        1] = static_cast<uint8_t>(delta);
+
+            local_sums[s] = psums[s];
+          }
+        }
+
         // construct the correction set lengths for this block
         uint64_t total_corrections = 0;
         for (int64_t cs = 0; cs < 4; cs++) {
           uint64_t cs_size = correction_set_sizes[(i / _b + 1) * 4 + cs] -
                              (correction_set_sizes[(i / _b) * 4 + cs]);
-          ((uint8_t*)(_bits.data() + bi))[cs] = (uint8_t)cs_size;
+          //((uint8_t*)(_bits.data() + bi))[cs] = (uint8_t)cs_size;
           correction_set_lengths[cs] = cs_size;
           total_corrections += cs_size;
           if (cs_size == _b) {
@@ -176,8 +214,19 @@ class FixedBlockedCorrectionSetsBase4Rank2 {
 
         corr_totals[total_corrections]++;
 
-        if ((_b * 2 / 64 + 1 + (4 + total_corrections + 7) / 8) >
-            block_constant) {
+        if (total_corrections > CS_CONSTANT) {
+          // the first 32 bits: highest bit is 1. Then correction set sizes for
+          // C, A, G, T, because C is the smallest
+          ((uint8_t*)(_bits.data() + bi))[0] =
+              (uint8_t)correction_set_lengths[1] | 1 << 7;
+          ((uint8_t*)(_bits.data() + bi))[1] =
+              (uint8_t)correction_set_lengths[0];
+          ((uint8_t*)(_bits.data() + bi))[2] =
+              (uint8_t)correction_set_lengths[2];
+          ((uint8_t*)(_bits.data() + bi))[3] =
+              (uint8_t)correction_set_lengths[3];
+
+          // the next 32 bits is the pointer to the position in P array
           ((uint32_t*)(_bits.data() + bi))[1] = p_ptr;
           int64_t local_i = 0;
           for (int64_t cs = 0; cs < 4; cs++) {
@@ -212,7 +261,21 @@ class FixedBlockedCorrectionSetsBase4Rank2 {
           p_ptr += (local_i + 3) / 4;
 
         } else {
-          int64_t local_i = 4;
+          // the first 4 bits of the first byte is the number of correction
+          // sets: at most 0111, so the highest bit = 0
+          ((uint8_t*)(_bits.data() + bi))[0] = total_corrections << 4;
+          // now we mark which correction sets are non-empty
+          uint8_t cs_flags = 0x0;
+          for (int64_t cs = 0; cs < 4; cs++) {
+            if (correction_set_lengths[cs]) cs_flags |= (1 << cs);
+          }
+          // 1st byte: 0111 TGCA
+          ((uint8_t*)(_bits.data() + bi))[0] |= cs_flags;
+
+          int64_t local_i = 1;
+
+          // Now the correction set positions ranges [0.._b) using _logb bits
+          // We set the highest bit to indicate start of a new correction set
           for (int64_t cs = 0; cs < 4; cs++) {
             uint64_t cs_size = correction_set_lengths[cs];
             uint64_t start_pos =
@@ -237,6 +300,9 @@ class FixedBlockedCorrectionSetsBase4Rank2 {
                   break;
               }
               uint8_t bitpos = pos % _b;
+              if (!_i) {
+                bitpos |= 1 << 7;
+              }
               ((uint8_t*)(_bits.data() + bi))[local_i] = bitpos;
               local_i++;
             }
@@ -289,13 +355,16 @@ class FixedBlockedCorrectionSetsBase4Rank2 {
     }
     _bits.resize(bi + 1);
     _N = _bits.size() * 64;
-    _p.resize(p_ptr + 4);
-    std::cout << "Finished constructing FixedBlockedCorrectionSetsBase4Rank2"
+    _p.resize(p_ptr + 1);
+    std::cout << "Finished constructing FixedBlockedCorrectionSetsBase4Rank2_"
               << " of size " << size_in_bytes() << " bytes" << std::endl;
     std::cout << "P array size: " << _p.size() * sizeof(uint32_t) << " bytes"
               << std::endl;
-    cout << "Min words per block: " << min_words
-         << " Max words per block: " << max_words << '\n';
+    std::cout << "_bits array size: " << _bits.size() * sizeof(uint64_t)
+              << " bytes" << std::endl;
+    std::cout << "_prefixsums array size: "
+              << _prefixsums.size() * sizeof(uint8_t) << " bytes" << std::endl;
+
     cout << "Fitted " << fitted_block << " blocks, "
          << (float)fitted_block / block_num * 100 << "'%'  out of " << block_num
          << "\n";
@@ -305,6 +374,8 @@ class FixedBlockedCorrectionSetsBase4Rank2 {
     delete[] ub_sums;
     delete[] corr_totals;
     delete[] block_sizes;
+    delete[] super_sums;
+    delete[] local_sums;
   }
 
   size_t size_in_bytes() const {
@@ -326,63 +397,98 @@ class FixedBlockedCorrectionSetsBase4Rank2 {
 
   // Rank of symbol in half-open interval [0..pos)
   int64_t rank(int64_t pos, uint64_t sym) const {
-    /* uint64_t super_sum =
+    uint64_t super_sum =
         ((uint64_t*)(_p.data() + 8 * (pos >> _log_superb)))[sym];
     uint64_t ub_sum =
         ((uint32_t*)(_p.data() + nsblocks * 8 + 4 * ((pos >> _log_ub))))[sym];
-  */
-    //  __builtin_prefetch(
-    //      &((uint64_t*)(_p.data() + 8 * (pos >> _log_superb)))[sym]);
-    //  __builtin_prefetch(
-    //      &((uint32_t*)(_p.data() + nsblocks * 8 + 4 * ((pos >>
-    //      _log_ub))))[sym]);
 
     uint64_t block_num = pos >> _logb;
 
     uint64_t blockstart = block_num * block_constant;
 
-    uint64_t preBlockRank = ((uint16_t*)(_bits.data() + blockstart))[sym];
+    size_t group = block_num / sums_per_prefix;
+    size_t offset = block_num % sums_per_prefix;
 
-    /* std::cout << "Querying rank for pos: " << pos << " symbol: " << sym
-    << " preBlockRank: " << preBlockRank << '\n'; */
+    const auto* pref16 = reinterpret_cast<const uint16_t*>(_prefixsums.data());
 
+    size_t absIndex = group * (groupBytes / sizeof(uint16_t));
+
+    // Absolute prefix sum.
+    uint64_t preBlockRank = pref16[absIndex + sym];
+
+    // Delta bytes.
+    size_t deltaBase =
+        group * groupBytes + absoluteBytes + sym * (sums_per_prefix - 1);
+
+    for (size_t i = 0; i < offset; ++i) {
+      preBlockRank += _prefixsums[deltaBase + i];
+    }
     int32_t correction = 0;
-    uint32_t corr_lens_a = ((uint8_t*)(_bits.data() + blockstart + 1))[0];
-    uint32_t corr_lens_c = ((uint8_t*)(_bits.data() + blockstart + 1))[1];
-    uint32_t corr_lens_g = ((uint8_t*)(_bits.data() + blockstart + 1))[2];
-    uint32_t corr_lens_t = ((uint8_t*)(_bits.data() + blockstart + 1))[3];
-    uint32_t total_corrections =
-        corr_lens_a + corr_lens_c + corr_lens_g + corr_lens_t;
-    bool jumped = 0;
 
-    uint64_t correction_offset =
-        ((sym > 0) * corr_lens_a + (sym > 1) * corr_lens_c +
-         (sym > 2) * corr_lens_g);
-    uint64_t correction_end =
-        (corr_lens_a + (sym > 0) * corr_lens_c + (sym > 1) * corr_lens_g +
-         (sym > 2) * corr_lens_t);
+    bool jumped = 0;
+    uint32_t corr_lens_a = 0;
+    uint32_t corr_lens_c = 0;
+    uint32_t corr_lens_g = 0;
+    uint32_t corr_lens_t = 0;
+    uint64_t correction_offset = 0;
+    uint64_t correction_end = 0;
+
+    uint8_t first_byte = ((uint8_t*)(_bits.data() + blockstart))[0];
+
+    if (first_byte & 1 << 7) {
+      jumped = 1;
+      corr_lens_a = ((uint8_t*)(_bits.data() + blockstart))[1];
+      corr_lens_c = first_byte - (1 << 7);
+      corr_lens_g = ((uint8_t*)(_bits.data() + blockstart))[2];
+      corr_lens_t = ((uint8_t*)(_bits.data() + blockstart))[3];
+      correction_offset = ((sym > 0) * corr_lens_a + (sym > 1) * corr_lens_c +
+                           (sym > 2) * corr_lens_g);
+      correction_end = (corr_lens_a + (sym > 0) * corr_lens_c +
+                        (sym > 1) * corr_lens_g + (sym > 2) * corr_lens_t);
+    }
+
     uint32_t p_ptr;
-    if ((_b * 2 / 64 + 1 + (4 + total_corrections + 7) / 8) <= block_constant) {
+    if (!jumped) {
+      // retrieve the number total size of correction sets
+      uint8_t total_corrections = first_byte >> 4;
+      // get the lower 4 bits indicating which sets are present
+      uint8_t corr_present = first_byte & 0xF;
+      // cout << " First byte ";
+      // print64bitword(first_byte);
       // get the correction
-      for (uint64_t i = correction_offset; i < correction_end; i++) {
-        uint16_t bitpos = ((uint8_t*)(_bits.data() + blockstart + 1))[4 + i];
-        /* if (bitpos < (pos & (_b - 1))) {
-          correction++;
-        } else {
-          break;
-        } */
-        if (bitpos >= (pos & (_b - 1))) {
-          break;
+      if (corr_present & (1 << sym)) {
+        // we actually have to do something
+        uint8_t ones_before_me = 1;
+        for (int8_t symi = 0; symi < sym; symi++) {
+          ones_before_me += bool(corr_present & 1 << symi);
         }
-        correction++;
+        // cout << " I am present " << sym << " need to see ones: " <<
+        // ones_before_me << "\n";
+        uint8_t ones_seen = 0;
+        for (uint64_t i = 0; i < total_corrections; i++) {
+          uint16_t bitpos = ((uint8_t*)(_bits.data() + blockstart))[1 + i];
+          if (bitpos & 1 << 7) ones_seen++;
+          if (ones_before_me == ones_seen) {
+            // get the 7 lowest bits
+            bitpos &= 0x7F;
+            if (bitpos >= (pos & (_b - 1))) {
+              break;
+            }
+            correction++;
+          }
+          /* if (bitpos < (pos & (_b - 1))) {
+            correction++;
+            } else {
+              break;
+              } */
+        }
       }
 
     } else {
-      jumped = 1;
-      p_ptr = ((uint32_t*)(_bits.data() + blockstart + 1))[1];
-      /* cout << "Looking for corrections elsewhere " << p_ptr << "\n";
-      cout << " correction_offset, correction_end, cs_size "
-           << correction_offset << correction_end << "\n"; */
+      p_ptr = ((uint32_t*)(_bits.data() + blockstart))[1];
+      // cout << "Looking for corrections elsewhere " << p_ptr << "\n";
+      // cout << " correction_offset, correction_end, cs_size "
+      //     << correction_offset << " " << correction_end << "\n";
       // get the correction
       //  __builtin_prefetch(&((uint8_t*)(_p.data() +
       //  p_ptr))[correction_offset]);
@@ -397,28 +503,28 @@ class FixedBlockedCorrectionSetsBase4Rank2 {
     }
 
     /* const uint64_t* blockwords =
-        _bits.data() + blockstart + 1 +
+        _bits.data() + blockstart +
         (corr_lens_a + corr_lens_c + corr_lens_g + corr_lens_t + 4 + 7) /
             8;  // move past the prefix sums and correction lengths */
     // uint64_t added = !jumped * (total_corrections + 4 + 7) / 8 + jumped;
-    uint32_t added = (total_corrections + 4 + 7) / 8;
-    if (jumped) added = 1;
-    /* uint32_t added = 1; */
+    /* uint32_t added = (total_corrections + 4 + 7) / 8;
+    if (jumped) added = 1; */
+    uint32_t added = 1;
 
     const uint64_t* blockwords =
-        _bits.data() + blockstart + 1 +
+        _bits.data() + blockstart +
         added;  // move past the prefix sums and correction lengths
     uint64_t blocki =
         ((pos & (_b - 1)) / 64) *
         2;  // index of word in this block containing the query position
 
-    uint64_t wholeWordRank = 0, leftOverRank = 0;
+    uint64_t countpA = 0, countpB = 0, wholeWordRank = 0, leftOverRank = 0;
 
     uint64_t upper_w = blockwords[0];
     uint64_t lower_w = blockwords[1];
     upper_w = (sym & 0x2) ? upper_w : ~upper_w;
     lower_w = (sym & 0x1) ? lower_w : ~lower_w;
-    wholeWordRank += (bool)(blocki) * __builtin_popcountll(upper_w & lower_w);
+    wholeWordRank += (bool)(blocki)*__builtin_popcountll(upper_w & lower_w);
 
     if (pos % 64) {  // possibly inspect part of the next word
       uint64_t upper_w = blockwords[blocki];
@@ -442,11 +548,6 @@ class FixedBlockedCorrectionSetsBase4Rank2 {
       }
     }
 
-    uint64_t super_sum =
-        ((uint64_t*)(_p.data() + 8 * (pos >> _log_superb)))[sym];
-    uint64_t ub_sum =
-        ((uint32_t*)(_p.data() + nsblocks * 8 + 4 * ((pos >> _log_ub))))[sym];
-
     int64_t result = preBlockRank + wholeWordRank + leftOverRank +
                      (sym == 0 ? -correction : correction) + super_sum + ub_sum;
 
@@ -464,11 +565,18 @@ class FixedBlockedCorrectionSetsBase4Rank2 {
     uint32_t p_size = _p.size();
     out.write((char*)&p_size, sizeof(uint32_t));
     out.write((char*)_p.data(), sizeof(uint32_t) * (_p.size()));
+    uint64_t prefixsums_size = _prefixsums.size();
+    out.write(reinterpret_cast<const char*>(&prefixsums_size),
+              sizeof(uint64_t));
+
+    out.write(reinterpret_cast<const char*>(_prefixsums.data()),
+              sizeof(uint8_t) * _prefixsums.size());
     written += sizeof(uint64_t);
     written += sizeof(uint64_t);
     written += sizeof(uint32_t);
     written += sizeof(uint64_t) * (bits_size);
     written += sizeof(uint32_t) * (_p.size());
+    written += sizeof(uint8_t) * _prefixsums.size();
     return written;
   }
 
@@ -485,11 +593,16 @@ class FixedBlockedCorrectionSetsBase4Rank2 {
     _p.reserve(p_size);
     _p.resize(p_size);
     in.read((char*)_p.data(), sizeof(uint32_t) * (_p.size()));
+    uint64_t prefixsums_size;
+    in.read(reinterpret_cast<char*>(&prefixsums_size), sizeof(uint64_t));
+    _prefixsums.resize(prefixsums_size);
+
+    in.read(reinterpret_cast<char*>(_prefixsums.data()),
+            sizeof(uint8_t) * _prefixsums.size());
     nsblocks = _n / _super_b + 1;
     nublocks = _n / _ub + 1;
-    cout << "Packed P array + packed prefix sums blocked correction sets "
-            "split "
-            "byte packed, block size "
-         << _b << " \n";
+    cout << "Constant size correction sets split, max corrections per block: "
+         << CS_CONSTANT << " block size " << block_constant
+         << " words, _b: " << _b << " \n";
   }
 };

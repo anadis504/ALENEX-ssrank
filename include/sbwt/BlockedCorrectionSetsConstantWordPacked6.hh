@@ -282,28 +282,18 @@ class BlockedCorrectionSetsBase4Rank67 {
       uint64_t j = 0;
       uint64_t upper_w = 0;
       uint64_t lower_w = 0;
-      uint64_t lower_w_tmp = 0;
       int smalls = 0;
       int highs = 0;
       while (j < 64 && (i + j) < _n) {
         uint8_t sym = seq[i + j];
-
-        if (sigma == 3)
-          sym++;  // for ternary sequences, remap the alphabet from {0,1,2} to
-                  // {1,2,3}
         psums[sym]++;
 
-        // w = w | (((uint64_t)sym) << (2 * j));
         upper_w = upper_w | (((uint64_t)(bool)(sym & 0x2)) << (j));
-        if (!(sym & 0x2)) {
-          lower_w = lower_w | (((uint64_t)(sym & 0x1)) << (smalls++));
-        } else {
-          lower_w_tmp = lower_w_tmp | (((uint64_t)(sym & 0x1)) << (highs++));
-        }
+        lower_w = lower_w | (((uint64_t)(bool)(sym & 0x1)) << (j));
+
         j++;
       }
 
-      lower_w = lower_w | (lower_w_tmp << (64 - highs));
       _bits[bi] = upper_w;
       bi++;
       _bits[bi] = lower_w;
@@ -331,10 +321,12 @@ class BlockedCorrectionSetsBase4Rank67 {
     _bits.resize(bi + 1);
     _N = _bits.size() * 64;
     _p.resize(p_ptr + 1);
-    std::cout << "Finished constructing BlockedCorrectionSetsBase4Rank67"
+    std::cout << "Finished constructing BlockedCorrectionSetsBase4Rank3_"
               << " of size " << size_in_bytes() << " bytes" << std::endl;
     std::cout << "P array size: " << _p.size() * sizeof(uint32_t) << " bytes"
               << std::endl;
+    std::cout << "_bits array size: " << _bits.size() * sizeof(uint32_t) << " bytes"
+              << std::endl;         
     cout << "Min words per block: " << min_words
          << " Max words per block: " << max_words << '\n';
     cout << "Fitted " << fitted_block << " blocks, "
@@ -366,19 +358,8 @@ class BlockedCorrectionSetsBase4Rank67 {
   }
 
   // Rank of symbol in half-open interval [0..pos)
-  int64_t rank(int64_t pos, char symbol) const {
-    uint64_t sym = (uint64_t)symbol;
-    /* uint64_t super_sum =
-        ((uint64_t*)(_p.data() + 8 * (pos >> _log_superb)))[sym];
-    uint64_t ub_sum =
-        ((uint32_t*)(_p.data() + nsblocks * 8 + 4 * ((pos >> _log_ub))))[sym];
-  */
-    //  __builtin_prefetch(
-    //      &((uint64_t*)(_p.data() + 8 * (pos >> _log_superb)))[sym]);
-    //  __builtin_prefetch(
-    //      &((uint32_t*)(_p.data() + nsblocks * 8 + 4 * ((pos >>
-    //      _log_ub))))[sym]);
-
+  int64_t rank(int64_t pos, uint64_t sym) const {
+    
     uint64_t block_num = pos >> _logb;
 
     uint64_t blockstart = block_num * block_constant;
@@ -483,24 +464,7 @@ class BlockedCorrectionSetsBase4Rank67 {
         ((pos & (_b - 1)) / 64) *
         2;  // index of word in this block containing the query position
 
-    uint64_t countpA = 0, countpB = 0, wholeWordRank = 0, leftOverRank = 0;
-
-    for (uint64_t i = 0; i < blocki; i += 2) {
-      uint64_t upper_w = blockwords[i];
-      uint64_t lower_w = blockwords[i + 1];
-      uint64_t highs = __builtin_popcountll(upper_w);
-      uint64_t lows = 64 - highs;
-
-      if (sym < 2) {
-        countpB = lows ? __builtin_popcountll(lower_w << highs) : 0;
-        countpA = lows - countpB;
-
-      } else {
-        countpB = highs ? __builtin_popcountll(lower_w >> lows) : 0;
-        countpA = highs - countpB;
-      }
-      wholeWordRank += (sym & 1) ? countpB : countpA;
-    }
+    uint64_t leftOverRank = 0;
 
     if (pos % 64) {  // possibly inspect part of the next word
       uint64_t upper_w = blockwords[blocki];
@@ -508,25 +472,9 @@ class BlockedCorrectionSetsBase4Rank67 {
       uint32_t shift =
           64 - (pos % 64);  // pos%64 is never 0 inside this if statement
       uint64_t lower_w = blockwords[blocki + 1];
-      uint64_t highs = __builtin_popcountll(upper_w);
-      uint64_t lows = 64 - highs;
-      uint64_t needed_highs = __builtin_popcountll(upper_w << shift);
-      uint64_t needed_lows = (pos % 64) - needed_highs;
-
-      if (sym < 2) {
-        countpB = needed_lows ? __builtin_popcountll((lower_w << highs)
-                                                     << (lows - needed_lows))
-                              : 0;  // shift to keep needed lows
-        countpA = needed_lows - countpB;
-
-      } else {
-        countpB = needed_highs
-                      ? __builtin_popcountll(((lower_w >> lows) << lows)
-                                             << (highs - needed_highs))
-                      : 0;  // shift to keep needed highs
-        countpA = needed_highs - countpB;
-      }
-      leftOverRank = (sym & 1) ? countpB : countpA;
+      upper_w = (sym & 0x2) ? upper_w : ~upper_w;
+      lower_w = (sym & 0x1) ? lower_w : ~lower_w;
+      leftOverRank = __builtin_popcountll((upper_w & lower_w) << shift);
     }
 
     if (jumped) {
@@ -545,7 +493,7 @@ class BlockedCorrectionSetsBase4Rank67 {
     uint64_t ub_sum =
         ((uint32_t*)(_p.data() + nsblocks * 8 + 4 * ((pos >> _log_ub))))[sym];
 
-    int64_t result = preBlockRank + wholeWordRank + leftOverRank +
+    int64_t result = preBlockRank + leftOverRank +
                      (sym == 0 ? -correction : correction) + super_sum + ub_sum;
 
     return result;

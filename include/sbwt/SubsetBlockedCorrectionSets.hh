@@ -58,6 +58,10 @@ class SubsetBlockedCorrectionSetsRank {
     return result;
   }
 
+  int64_t rank_by_charidx(int64_t pos, int64_t char_idx) const {
+    return the_data_structure.rank(pos, char_idx);
+  }
+
   bool contains(int64_t pos, char c) const {
     // TODO: faster
     int64_t r1 = this->rank(pos, c);
@@ -169,11 +173,12 @@ class SubsetBlockedCorrectionSetsRank {
         correction_Set_T, correction_set_sizes);
 
     // For debugging: verify that ranks match
-    /* rank_support_t A_bits_rs;
+    /*
+    rank_support_t A_bits_rs;
     rank_support_t C_bits_rs;
     rank_support_t G_bits_rs;
     rank_support_t T_bits_rs;
-
+    
     sdsl::util::init_support(A_bits_rs, &(A_bits));
     sdsl::util::init_support(C_bits_rs, &(C_bits));
     sdsl::util::init_support(G_bits_rs, &(G_bits));
@@ -191,22 +196,22 @@ class SubsetBlockedCorrectionSetsRank {
       int64_t ownT = this->rank(i, 'T');
       if (!(rA == ownA)) {
         std::cerr << "Rank mismatch at position " << i << " for A: " << rA
-                  << " vs " << ownA << '\n';
+        << " vs " << ownA << '\n';
         wrongs++;
       }
       if (!(rC == ownC)) {
         std::cerr << "Rank mismatch at position " << i << " for C: " << rC
-                  << " vs " << ownC << '\n';
+        << " vs " << ownC << '\n';
         wrongs++;
       }
       if (!(rG == ownG)) {
         std::cerr << "Rank mismatch at position " << i << " for G: " << rG
-                  << " vs " << ownG << '\n';
+        << " vs " << ownG << '\n';
         wrongs++;
       }
       if (!(rT == ownT)) {
         std::cerr << "Rank mismatch at position " << i << " for T: " << rT
-                  << " vs " << ownT << '\n';
+        << " vs " << ownT << '\n';
         wrongs++;
       }
       if (wrongs > 20) {
@@ -214,7 +219,8 @@ class SubsetBlockedCorrectionSetsRank {
         exit(1);
         break;
       }
-    } */
+    } 
+    */
   }
 
   int64_t serialize(ostream& os) const {

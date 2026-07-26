@@ -60,6 +60,9 @@ int build_from_plain_main(int argc, char** argv) {
   write_log("Reading input.", sbwt::LogLevel::MAJOR);
   matrixboss_plain.load(in.stream);
 
+  cout << "Read plain matrix SBWT with k = " << matrixboss_plain.get_k()
+       << " and n_kmers = " << matrixboss_plain.number_of_kmers() << " and n_subsets = " << matrixboss_plain.number_of_subsets() << '\n';
+
   sbwt::write_log("Building variant " + variant, sbwt::LogLevel::MAJOR);
 
   const sdsl::bit_vector& A_bits =
@@ -82,11 +85,6 @@ int build_from_plain_main(int argc, char** argv) {
   if (variant == "plain-matrix") {
     bytes_written = matrixboss_plain.serialize(out.stream);
   }
-  if (variant == "rrr-matrix") {
-    sbwt::rrr_matrix_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits, ssupport, k,
-                                 n_kmers, precalc_k);
-    bytes_written = sbwt.serialize(out.stream);
-  }
   if (variant == "mef-matrix") {
     sbwt::mef_matrix_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits, ssupport, k,
                                  n_kmers, precalc_k);
@@ -97,99 +95,84 @@ int build_from_plain_main(int argc, char** argv) {
                                   n_kmers, precalc_k);
     bytes_written = sbwt.serialize(out.stream);
   }
-  if (variant == "rrr-split") {
-    sbwt::rrr_split_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits, ssupport, k,
-                                n_kmers, precalc_k);
-    bytes_written = sbwt.serialize(out.stream);
-  }
   if (variant == "mef-split") {
     sbwt::mef_split_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits, ssupport, k,
                                 n_kmers, precalc_k);
     bytes_written = sbwt.serialize(out.stream);
   }
-  if (variant == "plain-concat") {
-    sbwt::plain_concat_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits, ssupport, k,
-                                   n_kmers, precalc_k);
-    bytes_written = sbwt.serialize(out.stream);
-  }
-  if (variant == "mef-concat") {
-    sbwt::mef_concat_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits, ssupport, k,
-                                 n_kmers, precalc_k);
-    bytes_written = sbwt.serialize(out.stream);
-  }
-  if (variant == "plain-subsetwt") {
-    sbwt::plain_sswt_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits, ssupport, k,
-                                 n_kmers, precalc_k);
-    bytes_written = sbwt.serialize(out.stream);
-  }
-  if (variant == "rrr-subsetwt") {
-    sbwt::rrr_sswt_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits, ssupport, k,
+  if (variant == "ef-split") {
+    sbwt::ef_split_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits, ssupport, k,
                                n_kmers, precalc_k);
     bytes_written = sbwt.serialize(out.stream);
   }
-  if (variant == "new-concat") {
-    sbwt::new_concat_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits, ssupport, k,
-                                 n_kmers, precalc_k);
-    bytes_written = sbwt.serialize(out.stream);
-  }
   if (variant == "correction-sets") {
-    sbwt::correction_sets_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits,
-                                            ssupport, k, n_kmers, precalc_k);
-    bytes_written = sbwt.serialize(out.stream);
-  }
-  if (variant == "split-smaller-size") {
-    sbwt::split_smaller_size_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits,
-                                         ssupport, k, n_kmers, precalc_k);
-    bytes_written = sbwt.serialize(out.stream);
-  }
-  if (variant == "concat-split-lengths") {
-    sbwt::concat_split_lengths_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits,
-                                           ssupport, k, n_kmers, precalc_k);
-    bytes_written = sbwt.serialize(out.stream);
-  }
-  if (variant == "new-plain-concat") {
-    sbwt::new_plain_concat_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits, ssupport,
-                                       k, n_kmers, precalc_k);
-    bytes_written = sbwt.serialize(out.stream);
-  }
-  if (variant == "new-split") {
-    sbwt::new_split_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits, ssupport,
+    sbwt::correction_sets_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits, ssupport,
                                       k, n_kmers, precalc_k);
     bytes_written = sbwt.serialize(out.stream);
   }
-  if (variant == "blocked-correction-sets") {
-    sbwt::blocked_correction_sets_sbwt_t sbwt(
-        A_bits, C_bits, G_bits, T_bits, ssupport, k, n_kmers, precalc_k);
+  if (variant == "pred8-split-packed") {
+    sbwt::new_split_packed_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits, ssupport, k,
+                                       n_kmers, precalc_k);
     bytes_written = sbwt.serialize(out.stream);
   }
-  if (variant == "fixed-block-correction-sets1") {
+  if (variant == "pred8-split-w-packed") {
+    sbwt::new_split_w_packed_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits, ssupport, k,
+                                         n_kmers, precalc_k);
+    bytes_written = sbwt.serialize(out.stream);
+  }
+  if (variant == "pred8-split-transposed") {
+    sbwt::new_split_transposed_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits, ssupport, k,
+                                          n_kmers, precalc_k);
+    bytes_written = sbwt.serialize(out.stream);
+  }
+  if (variant == "pino-split-transposed") {
+    sbwt::new_split_pino_transposed_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits, ssupport, k,
+                                          n_kmers, precalc_k);
+    bytes_written = sbwt.serialize(out.stream);
+  }
+  if (variant == "blocked-correction-sets") {
+    sbwt::blocked_correction_sets_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits,
+                                              ssupport, k, n_kmers, precalc_k);
+    bytes_written = sbwt.serialize(out.stream);
+  }
+  if (variant == "fixed-block-correction-setsA") {
     sbwt::fixed_block_correction_sets1_sbwt_t sbwt(
         A_bits, C_bits, G_bits, T_bits, ssupport, k, n_kmers, precalc_k);
     bytes_written = sbwt.serialize(out.stream);
   }
-  if (variant == "fixed-block-correction-sets2") {
+  if (variant == "fixed-block-correction-setsA-smaller") {
+    sbwt::fixed_block_correction_sets1_smaller_sbwt_t sbwt(
+        A_bits, C_bits, G_bits, T_bits, ssupport, k, n_kmers, precalc_k);
+    bytes_written = sbwt.serialize(out.stream);
+  }
+  if (variant == "fixed-block-correction-setsB") {
     sbwt::fixed_block_correction_sets2_sbwt_t sbwt(
         A_bits, C_bits, G_bits, T_bits, ssupport, k, n_kmers, precalc_k);
     bytes_written = sbwt.serialize(out.stream);
   }
-  if (variant == "fixed-block-correction-sets3") {
+  if (variant == "fixed-block-correction-setsC") {
     sbwt::fixed_block_correction_sets3_sbwt_t sbwt(
         A_bits, C_bits, G_bits, T_bits, ssupport, k, n_kmers, precalc_k);
     bytes_written = sbwt.serialize(out.stream);
   }
   if (variant == "blocked8-split") {
-    sbwt::blocked8_split_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits, ssupport, k,
-                                    n_kmers, precalc_k);
+    sbwt::blocked8_split_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits, ssupport,
+                                     k, n_kmers, precalc_k);
     bytes_written = sbwt.serialize(out.stream);
   }
   if (variant == "blocked9-split") {
-    sbwt::blocked9_split_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits, ssupport, k,
-                                    n_kmers, precalc_k);
+    sbwt::blocked9_split_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits, ssupport,
+                                     k, n_kmers, precalc_k);
     bytes_written = sbwt.serialize(out.stream);
   }
-  if (variant == "pred8-split") {
+  if (variant == "pred8-WT-split") {
     sbwt::pred8_split_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits, ssupport, k,
-                                    n_kmers, precalc_k);
+                                  n_kmers, precalc_k);
+    bytes_written = sbwt.serialize(out.stream);
+  }
+  if (variant == "pino-WT-split") {
+    sbwt::pred8_pino_split_sbwt_t sbwt(A_bits, C_bits, G_bits, T_bits, ssupport, k,
+                                  n_kmers, precalc_k);
     bytes_written = sbwt.serialize(out.stream);
   }
   sbwt::write_log("Built variant " + variant + " to file " + out_file,

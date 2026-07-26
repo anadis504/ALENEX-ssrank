@@ -68,11 +68,6 @@ int ascii_export_main(int argc, char** argv) {
     sbwt.load(in.stream);
     export_sbwt_variant(sbwt, out);
   }
-  if (variant == "rrr-matrix") {
-    rrr_matrix_sbwt_t sbwt;
-    sbwt.load(in.stream);
-    export_sbwt_variant(sbwt, out);
-  }
   if (variant == "mef-matrix") {
     cerr << "Error: Index export does not work for mef-matrix because mef does "
             "not implement access to the sets"
@@ -84,65 +79,19 @@ int ascii_export_main(int argc, char** argv) {
     sbwt.load(in.stream);
     export_sbwt_variant(sbwt, out);
   }
-  if (variant == "rrr-split") {
-    rrr_split_sbwt_t sbwt;
-    sbwt.load(in.stream);
-    export_sbwt_variant(sbwt, out);
-  }
   if (variant == "mef-split") {
     cerr << "Error: Index export does not work for mef-split because mef does "
             "not implement access to the sets"
          << endl;
     return 1;
   }
-  if (variant == "plain-concat") {
-    plain_concat_sbwt_t sbwt;
-    sbwt.load(in.stream);
-    export_sbwt_variant(sbwt, out);
-  }
-  if (variant == "mef-concat") {
-    cerr << "Error: Index export does not work for mef-concat because mef does "
-            "not implement access to the sets"
-         << endl;
-    return 1;
-  }
-  if (variant == "plain-subsetwt") {
-    plain_sswt_sbwt_t sbwt;
-    sbwt.load(in.stream);
-    export_sbwt_variant(sbwt, out);
-  }
-  if (variant == "rrr-subsetwt") {
-    rrr_sswt_sbwt_t sbwt;
-    sbwt.load(in.stream);
-    export_sbwt_variant(sbwt, out);
-  }
-  if (variant == "new-concat") {
-    new_concat_sbwt_t sbwt;
-    sbwt.load(in.stream);
-    export_sbwt_variant(sbwt, out);
-  }
   if (variant == "correction-sets") {
     correction_sets_sbwt_t sbwt;
     sbwt.load(in.stream);
     export_sbwt_variant(sbwt, out);
   }
-  if (variant == "split-smaller-size") {
-    split_smaller_size_sbwt_t sbwt;
-    sbwt.load(in.stream);
-    export_sbwt_variant(sbwt, out);
-  }
-  if (variant == "concat-split-lengths") {
-    concat_split_lengths_sbwt_t sbwt;
-    sbwt.load(in.stream);
-    export_sbwt_variant(sbwt, out);
-  }
-  if (variant == "new-plain-concat") {
-    new_plain_concat_sbwt_t sbwt;
-    sbwt.load(in.stream);
-    export_sbwt_variant(sbwt, out);
-  }
-  if (variant == "new-split") {
-    new_split_sbwt_t sbwt;
+  if (variant == "npred8-split-w-packed") {
+    new_split_w_packed_sbwt_t sbwt;
     sbwt.load(in.stream);
     export_sbwt_variant(sbwt, out);
   }
@@ -151,17 +100,18 @@ int ascii_export_main(int argc, char** argv) {
     sbwt.load(in.stream);
     export_sbwt_variant(sbwt, out);
   }
-  if (variant == "fixed-block-correction-sets1") {
+  if (variant == "fixed-block-correction-setsA") {
     fixed_block_correction_sets1_sbwt_t sbwt;
     sbwt.load(in.stream);
     export_sbwt_variant(sbwt, out);
   }
-  if (variant == "fixed-block-correction-sets2") {
+  if (variant == "fixed-block-correction-setsB") {
     fixed_block_correction_sets2_sbwt_t sbwt;
     sbwt.load(in.stream);
     export_sbwt_variant(sbwt, out);
   }
-  if (variant == "fixed-block-correction-sets3") {
+
+  if (variant == "fixed-block-correction-setsC") {
     fixed_block_correction_sets3_sbwt_t sbwt;
     sbwt.load(in.stream);
     export_sbwt_variant(sbwt, out);
@@ -176,7 +126,7 @@ int ascii_export_main(int argc, char** argv) {
     sbwt.load(in.stream);
     export_sbwt_variant(sbwt, out);
   }
-  if (variant == "pred8-split") {
+  if (variant == "pred8-WT-split") {
     pred8_split_sbwt_t sbwt;
     sbwt.load(in.stream);
     export_sbwt_variant(sbwt, out);
