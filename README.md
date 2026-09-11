@@ -6,11 +6,16 @@ This construction algorithm is based on the lightning-fast [k-mer counter KMC](h
 
 # Compiling
 
-The following commands have been tested to successfully build SBWT on a clean Ubuntu 18.04 Docker image.
+The following commands have been tested to successfully build SBWT on a clean Ubuntu 22.04 Docker image.
 
 ```
 apt-get update
 apt-get install -y g++ gcc cmake git python3-dev g++-8 libz-dev
+
+git clone --recurse-submodules \
+    https://github.com/anadis504/ALENEX-ssrank.git
+    
+git submodule update --init --recursive
 
 cd ALENEX-ssrank/build
 cmake .. -DCMAKE_CXX_COMPILER=g++-8 -DMAX_KMER_LENGTH=32
@@ -109,12 +114,19 @@ Usage example: build -i example_data/coli3.fna -o index.sbwt -k 30
 
 
 
-To build, e.g., the corrections-sets variant from the already constructed plain-matrix variant with k=31 and reverse compliemnt added (Ecoli_31_r.sbwt) of the coli3682_dataset provided in the dropbox folder:
+To build, e.g., the corrections-sets variant from the already constructed plain-matrix variant (Ecoli_31_r.sbwt) run:
 
 
 ``` diff
-./build/bin/sbwt build-variant -i ./Ecoli_31_.sbwt -o ./correction-sets.sbwt --variant correction-sets
+./build/bin/sbwt build-variant \
+    -i /data/Ecoli_31_r.sbwt \
+    -o /data/correction-sets.sbwt \
+    --variant correction-sets
 ```
+
+The input file is one of the supplied plain-matrix SBWT indexes.
+
+The large input indexes required to reproduce the experiments are distributed separately. See the instructions in the ALENEX Artifact Evaluation README.md for information about obtaining the experimental data.
 
 # Running queries
 

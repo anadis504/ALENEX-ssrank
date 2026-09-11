@@ -16,19 +16,11 @@ RUN apt-get update && \
         libbz2-dev && \
     rm -rf /var/lib/apt/lists/*
 
-RUN git clone --recurse-submodules \
-    https://github.com/anadis504/ALENEX-ssrank.git \
-    /SBWT
-
 WORKDIR /SBWT
-
-RUN git submodule update --init --recursive
 
 COPY . .
 
-RUN git submodule update --init --recursive
-
-RUN mkdir build && \
+RUN mkdir -p build && \
     cd build && \
     cmake .. \
         -DCMAKE_CXX_COMPILER=g++-10 \
