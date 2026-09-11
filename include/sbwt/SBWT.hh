@@ -462,11 +462,27 @@ vector<T> load_std_vector(istream& is){
 template <typename subset_rank_t>
 int64_t SBWT<subset_rank_t>::serialize(ostream& os) const{
     int64_t written = 0;
+    int64_t written_tmp = 0;
 
     written += serialize_string(SBWT_VERSION, os);
 
-    written += subset_rank.serialize(os);
-    written += suffix_group_starts.serialize(os);
+    written_tmp = subset_rank.serialize(os);
+    written += written_tmp;
+    sbwt::write_log(
+      "Subset_rank structure on disk: " +
+          to_string(written_tmp * 8.0 /
+                    number_of_subsets()) +
+          " bits per column",
+      sbwt::LogLevel::MAJOR);
+    written_tmp = suffix_group_starts.serialize(os);
+
+    sbwt::write_log(
+      "Streaming support on disk: " +
+          to_string(written_tmp * 8.0 / number_of_subsets()) +
+          " bits per column",
+      sbwt::LogLevel::MAJOR);
+
+    written += written_tmp;
 
     written += serialize_std_vector(C, os);
 

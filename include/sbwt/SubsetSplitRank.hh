@@ -47,24 +47,32 @@ class SubsetSplitRank {
     int64_t written = 0;
     int64_t written_tmp = 0;
     written += X.serialize(os);
-    cerr << "X serialized " << written << " bytes\n";
+    std::cout << "Serialized " << typeid(X).name() << ": " << written
+              << " bytes\n";
     written_tmp = Y.serialize(os);
-    cerr << "Y serialized " << written_tmp << " bytes\n";
+    std::cout << "Serialized " << typeid(Y).name() << ": " << written_tmp
+              << " bytes\n";
     written += written_tmp;
+
     written_tmp = Z_A.serialize(os);
-    cerr << "Z_A serialized " << written_tmp << " bytes\n";
     written += written_tmp;
     written += Z_C.serialize(os);
     written += Z_G.serialize(os);
     written += Z_T.serialize(os);
+    std::cout << "Serialized matrix Z" << (written_tmp * 4) << " bytes\n";
 
     written_tmp = X_rs.serialize(os);
-    cerr << "X_rs serialized " << written_tmp << " bytes\n";
+    std::cout << "Serialized rank structure for " << typeid(X).name()
+              << written_tmp << " bytes\n";
+
     written += written_tmp;
-    written += Z_A_rs.serialize(os);
+    written_tmp = Z_A_rs.serialize(os);
+    written += written_tmp;
     written += Z_C_rs.serialize(os);
     written += Z_G_rs.serialize(os);
     written += Z_T_rs.serialize(os);
+    std::cout << "Serialized rank structures for matrix Z" << (written_tmp * 4)
+              << " bytes\n";
     return written;
   }
 
@@ -164,7 +172,7 @@ class SubsetSplitRank {
     Z_T = Z_bitvector_t(Z_T_plain);
 
     sdsl::util::init_support(X_rs, &X);
-    
+
     sdsl::util::init_support(Z_A_rs, &Z_A);
     sdsl::util::init_support(Z_C_rs, &Z_C);
     sdsl::util::init_support(Z_G_rs, &Z_G);

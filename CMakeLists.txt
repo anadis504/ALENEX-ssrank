@@ -138,6 +138,7 @@ add_executable(sbwt
   src/CLI/sbwt_build_from_plain_matrix.cpp
   src/CLI/sbwt_ascii_export.cpp
   src/CLI/sbwt_s_rank_queries.cpp
+  src/CLI/sbwt_sample_kmers_from_index.cpp
   ${SBWT_SOURCES})
 
 target_compile_options(sbwt PRIVATE -march=native -funroll-loops)

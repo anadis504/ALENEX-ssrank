@@ -89,7 +89,7 @@ Usage:
                                 compressed, which might take a while.
       --no-streaming-support    Save space by not building the streaming 
                                 query support bit vector. This leads to 
-                                slower queries.
+                                slower queries if the query reads are positive (consequtive k-mers are present in the SBWT).
   -t, --n-threads arg           Number of parallel threads. (default: 1)
   -a, --min-abundance arg       Discard all k-mers occurring fewer than 
                                 this many times. By default we keep all 
@@ -108,10 +108,11 @@ Usage example: build -i example_data/coli3.fna -o index.sbwt -k 30
 ```
 
 
+
+To build, e.g., the corrections-sets variant from the already constructed plain-matrix variant with k=31 and reverse compliemnt added (Ecoli_31_r.sbwt) of the coli3682_dataset provided in the dropbox folder:
+
+
 ``` diff
-+ To build, e.g., the corrections-sets variant from the already constructed plain-matrix variant with k=31 and reverse compliemnt added (Ecoli_31_r.sbwt) of the coli3682_dataset provided in the dropbox folder:
-```
-```
 ./build/bin/sbwt build-variant -i ./Ecoli_31_.sbwt -o ./correction-sets.sbwt --variant correction-sets
 ```
 

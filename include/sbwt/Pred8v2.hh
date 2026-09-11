@@ -109,6 +109,7 @@ class Pred8v2 {
 
     int64_t rank(int64_t pos) const{
        pair<int64_t, bool> r = getPred(pos);
+       // the +1 is because r is the position in the set and we want the number of elements
        return (r.first+1)-((uint64_t)(r.second));
     } 
 

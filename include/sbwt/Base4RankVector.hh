@@ -32,7 +32,7 @@ class Base4RankVector {
     // but no other data.
     _N = nblocks * (2 * _b + 128);
 
-    cout << "_n: " << _n << " nblocks: " << nblocks << " _N: " << _N << " bits.size(): " << _N / 64 << '\n';
+    /* cout << "_n: " << _n << " nblocks: " << nblocks << " _N: " << _N << " bits.size(): " << _N / 64 << '\n'; */
     _bits.reserve(_N / 64);
     _bits.resize(_N / 64);
     uint32_t* psums = new uint32_t[4];

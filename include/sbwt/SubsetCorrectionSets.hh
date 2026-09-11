@@ -14,22 +14,18 @@ namespace sbwt {
 using namespace std;
 
 template <typename quadrank_structure_t, typename bitvector_t,
-          typename rank_support_t, typename pred8_t, typename pred16_t>
+          typename rank_support_t, typename pred8_t>
 class SubsetCorrectionSetsRank {
-  /* X_bitvector_type nonsingleton_sets;
-  X_bitvector_rank_type nonsingleton_sets_rs; */
-
+  
  public:
   quadrank_structure_t concat;
   pred8_t correction_Set_A_pred;
-  pred16_t correction_Set_C_pred;
-  pred16_t correction_Set_G_pred;
-  pred16_t correction_Set_T_pred;
+  pred8_t correction_Set_C_pred;
+  pred8_t correction_Set_G_pred;
+  pred8_t correction_Set_T_pred;
 
   // Count of character c in subsets up to pos, not including pos
   int64_t rank(int64_t pos, char c) const {
-    /* std::cout << "Rank called for pos " << pos << " and char " << (int)c
-              << '\n'; */
 
     uint8_t c_coded;
     int64_t correction = 0;
@@ -55,8 +51,7 @@ class SubsetCorrectionSetsRank {
         exit(1);
     }
     int64_t pre_result = concat.rank(pos, c_coded);
-    /* std::cout << "Final result for rank(" << pos << "," << (int)c << ") is "
-              << result << '\n'; */
+    
     return pre_result + correction;
   }
 
@@ -173,12 +168,12 @@ class SubsetCorrectionSetsRank {
     concat = quadrank_structure_t(Y_str);
 
     correction_Set_A_pred = pred8_t(correction_Set_A);
-    correction_Set_C_pred = pred16_t(correction_Set_C);
-    correction_Set_G_pred = pred16_t(correction_Set_G);
-    correction_Set_T_pred = pred16_t(correction_Set_T);
+    correction_Set_C_pred = pred8_t(correction_Set_C);
+    correction_Set_G_pred = pred8_t(correction_Set_G);
+    correction_Set_T_pred = pred8_t(correction_Set_T);
 
     // For debugging: verify that ranks match
-    rank_support_t A_bits_rs;
+    /* rank_support_t A_bits_rs;
     rank_support_t C_bits_rs;
     rank_support_t G_bits_rs;
     rank_support_t T_bits_rs;
@@ -219,7 +214,7 @@ class SubsetCorrectionSetsRank {
         wrongs++;
       }
       if (wrongs > 20) exit(1);
-    }
+    } */
   }
 
   int64_t serialize(ostream& os) const {

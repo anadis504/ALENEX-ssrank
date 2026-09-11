@@ -16,7 +16,7 @@
 #include <unordered_set>
 #include <vector>
 
-#include "Pred8vS1_new.hh"
+#include "Pred8vS1.hh"
 
 using namespace std;
 using namespace std::chrono;
@@ -33,23 +33,15 @@ class Pred8vPinoLight {
     _X.resize(_nblocks + 1);                 // +1 for a useful dummy at the end
     /* _X = new uint32_t[_nblocks + 1];  */  //+1 for a useful dummy at the end
     for (uint64_t i = 0; i < _nblocks; i++) _X[i] = 0;
-    uint8_t* _C = new uint8_t[_nblocks];
-    for (uint64_t i = 0; i < _nblocks; i++) _C[i] = 0;
-
+    
     // NB: note that because we substract _min from everything, the 0th bucket
     // is non-empty
-
     _nActiveBuckets = 0;
     for (uint64_t i = 0; i < _n; i++) {
       uint64_t v = data[i] - _min;
       if (!_X[v >> 8]) _nActiveBuckets++;
       _X[v >> 8]++;
     }
-    cerr << "Pred8vPinoLight: _u _n _min _nblocks _nActiveBuckets: " << _u
-         << ' ' << _n << ' ' << _min << ' ' << _nblocks << ' '
-         << _nActiveBuckets << '\n';
-
-    // _Y = new uint8_t[_n];
     _Y.resize(_n);
 
     uint64_t yi = 0;
@@ -59,7 +51,6 @@ class Pred8vPinoLight {
       _X[v >> 8] = yi;
       // (yi << 1) | (bcount > 0);  // LSB==1 indicates bucket is non-empty
       if (bcount) {
-        _C[v >> 8] = (uint8_t)(bcount - 1);
         for (uint64_t j = 0; j < bcount; j++) {
           v = data[i] - _min;
           _Y[yi++] = v & 255;
@@ -78,10 +69,7 @@ class Pred8vPinoLight {
         nextNonEmptyX = _X[i];
       }
     }
-    // _X[_nblocks] = (((_X[_nblocks - 1]) + _C[_nblocks - 1]));
     
-    delete[] _C;
-
     std::vector<uint64_t> block_indices;
     // the escape index as the Pred8 structure always starts from an element
     uint64_t bi = 0;
@@ -94,9 +82,9 @@ class Pred8vPinoLight {
       block_indices.push_back(bi);
     }
     //block_indices.push_back(bi+=1);
-    _U = Pred8vS1_new(block_indices);
+    _U = Pred8vS1(block_indices);
 
-    cout << "returned from Pred8vS1 constructor" << endl;
+    /* cout << "returned from Pred8vS1 constructor" << endl;
     uint64_t wrongs = 0;
     for (uint64_t bi = 0; bi < _nblocks; bi++) {
       uint32_t x = _X[bi];
@@ -136,8 +124,8 @@ class Pred8vPinoLight {
         wrongs++;
       }
       if (wrongs > 20) exit(1);
-    }
-    cerr << "Pred8vPinoLight: sizeInBytes(): " << sizeInBytes() << '\n';
+    } */
+    /* cerr << "Pred8vPinoLight: sizeInBytes(): " << sizeInBytes() << '\n'; */
   }
 
   //  p is the index of the predecessor in the set
@@ -214,11 +202,8 @@ class Pred8vPinoLight {
     os.write(reinterpret_cast<const char*>(&_min), sizeof(_min));
     os.write(reinterpret_cast<const char*>(&_nblocks), sizeof(_nblocks));
 
-    cout << "Pred8vPinoLight::serialize: _Y.size() = " << _n
-         << " _U sizeInBytes " << _U.sizeInBytes() << '\n';
-
-    /* os.write(reinterpret_cast<const char*>(_X.data()),
-             (_nblocks + 1) * sizeof(uint32_t)); */
+    /* cout << "Pred8vPinoLight::serialize: _Y.size() = " << _n
+         << " _U sizeInBytes " << _U.sizeInBytes() << '\n'; */
 
     os.write(reinterpret_cast<const char*>(_Y.data()), _n * sizeof(uint8_t));
 
@@ -239,7 +224,6 @@ class Pred8vPinoLight {
 
     _Y.resize(_n);
     is.read(reinterpret_cast<char*>(_Y.data()), _n * sizeof(uint8_t));
-    ;
     _U.load(is);
   }
 
@@ -264,7 +248,7 @@ class Pred8vPinoLight {
   uint64_t _nActiveBuckets = 0;
   std::vector<uint32_t> _X;
   std::vector<uint8_t> _Y;
-  Pred8vS1_new _U;
+  Pred8vS1 _U;
 };
 
 #endif

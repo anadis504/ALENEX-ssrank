@@ -14,8 +14,6 @@
 #include "BlockedCorrectionSetsConstantWordPacked7.hh"
 #include "BlockedCorrectionSetsConstantWordPacked7smaller.hh"
 #include "MEF.hpp"
-#include "Pred16_BS.hh"
-#include "Pred16vPino_BS.hh"
 #include "Pred8vPinoLight.hh"
 #include "SBWT.hh"
 #include "SubsetBlockedCorrectionSets.hh"
@@ -92,7 +90,7 @@ typedef SBWT<SubsetBlockedSplitRank9<sdsl::bit_vector, sdsl::rank_support_v5<>>>
 // Correction set
 typedef SBWT<SubsetCorrectionSetsRank<Base4RankVectorTransposed<4>,
                                       sdsl::bit_vector, sdsl::rank_support_v5<>,
-                                      Pred8vPinoLight, Pred8vPinoLight>>
+                                      Pred8vPinoLight>>
     correction_sets_sbwt_t;
 
 typedef SBWT<
@@ -118,24 +116,4 @@ typedef SBWT<SubsetFixedBlockCorrectionSetsRank3<
     sdsl::rank_support_v5<>>>
     fixed_block_correction_sets3_sbwt_t;
 
-// Other tested variants not included in the paper
-/* typedef SBWT<SubsetFixedBlockCorrectionSetsRank3<
-    BlockedCorrectionSetsBase4Rank3_<4>, sdsl::bit_vector,
-    sdsl::rank_support_v5<>>>
-    fixed_block_correction_sets3_smaller_sbwt_t;
-typedef SBWT<SubsetFixedBlockCorrectionSetsRank7<
-    FixedBlockedCorrectionSetsBase4Rank2_<4>, sdsl::bit_vector,
-    sdsl::rank_support_v5<>>>
-    fixed_block_correction_sets2_smaller_sbwt_t;
-typedef SBWT<SubsetConcatCorrectionSetRank<
-    sdsl::bit_vector, sdsl::rank_support_v5<>, Pred8vPinoLight>>
-    concat_correction_set_sbwt_t;
-typedef SBWT<
-    SubsetSplitSmallerSizeRank<sdsl::bit_vector, sdsl::rank_support_v5<>>>
-    split_smaller_size_sbwt_t;
-typedef SBWT<
-    SubsetConcatSplitLengthsRank<sdsl::bit_vector, sdsl::rank_support_v5<>>>
-    concat_split_lengths_sbwt_t;
-typedef SBWT<SubsetNewConcatRank<sdsl::bit_vector, sdsl::rank_support_v5<>>>
-    new_concat_sbwt_t; */
 }  // namespace sbwt

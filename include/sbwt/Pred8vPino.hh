@@ -17,7 +17,6 @@
 #include <vector>
 
 #include "Pred8vS1.hh"
-#include "Pred8vS1_new.hh"
 
 using namespace std;
 using namespace std::chrono;
@@ -116,9 +115,9 @@ class Pred8vPino {
       bi += 1 + bcount;
       block_indices.push_back(bi);
     }
-    _U = Pred8vS1_new(block_indices);
+    _U = Pred8vS1(block_indices);
 
-    // cout << "returned from Pred8vS1_new constructor" << endl;
+    // cout << "returned from Pred8vS1 constructor" << endl;
     /* uint64_t wrongs = 0;
     for (uint64_t bi = 0; bi < _nblocks; bi++) {
       uint32_t x = _X[bi];
@@ -369,7 +368,7 @@ class Pred8vPino {
   std::vector<uint32_t> _X;
   std::vector<uint8_t> _Y;
   std::vector<uint32_t> _Z;
-  Pred8vS1_new _U;
+  Pred8vS1 _U;
 };
 
 #endif

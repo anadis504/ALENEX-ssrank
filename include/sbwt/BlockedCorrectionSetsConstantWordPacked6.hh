@@ -61,7 +61,7 @@ class BlockedCorrectionSetsBase4Rank67 {
     // The last block has just the prefix sums (128 bits) but no other data.
     _N = nblocks * (block_constant * 64) + corrections * 16 + nblocks * 64;
 
-    cout << "Packed P array + packed prefix sums blocked correction sets split "
+    /* cout << "Packed P array + packed prefix sums blocked correction sets split "
             "byte packed, block size "
          << _b << " \n";
     cout << "_n: " << _n << " nblocks: " << nblocks << " _N: " << _N
@@ -69,7 +69,7 @@ class BlockedCorrectionSetsBase4Rank67 {
          << '\n';
     cout << "log_b: " << _logb << " _b: " << _b
          << " log_superb: " << _log_superb << " super_b: " << _super_b << '\n';
-    _bits.reserve(_N / 64);
+   */  _bits.reserve(_N / 64);
     _bits.resize(_N / 64);
     _p.reserve(nblocks + 2 + nsblocks * 8 + nblocks * 20);
     _p.resize(nblocks + 2 + nsblocks * 8 + nblocks * 20);

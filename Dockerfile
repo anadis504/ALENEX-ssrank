@@ -6,7 +6,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 RUN apt-get update && apt-get install -y g++ gcc cmake git python3-dev g++-10 libz-dev libbz2-dev
 
-RUN git clone https://github.com/anadis504/ESA-ssrank
+RUN git clone https://github.com/anadis504/ALENEX-ssrank
 WORKDIR /SBWT
 RUN git checkout master
 

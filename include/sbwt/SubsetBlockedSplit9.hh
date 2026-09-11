@@ -198,7 +198,8 @@ class SubsetBlockedSplitRank9 {
   int64_t serialize(ostream& os) const {
     int64_t tmp, written = 0;
     written += the_data_structure.serialize(os);
-    std::cout << "Serialized the_data_structure " << written << " bytes\n";
+    std::cout << "Serialized " << typeid(the_data_structure).name() << ": "
+              << written << " bytes\n";
     return written;
   }
 

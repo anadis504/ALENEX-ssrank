@@ -67,7 +67,7 @@ class FixedBlockedCorrectionSetsBase4Rank2_ {
     // The last block has just the prefix sums (128 bits) but no other data.
     _N = nblocks * (block_constant * 64) + corrections * 16 + nblocks * 64;
 
-    cout << "Packed P array + packed prefix sums blocked correction sets split "
+    /* cout << "Packed P array + packed prefix sums blocked correction sets split "
             "byte packed, block size "
          << _b << " \n";
     cout << "_n: " << _n << " nblocks: " << nblocks << " _N: " << _N
@@ -75,7 +75,7 @@ class FixedBlockedCorrectionSetsBase4Rank2_ {
          << '\n';
     cout << "log_b: " << _logb << " _b: " << _b
          << " log_superb: " << _log_superb << " super_b: " << _super_b << '\n';
-    _bits.reserve(_N / 64);
+ */    _bits.reserve(_N / 64);
     _bits.resize(_N / 64);
     _p.reserve(nblocks + 2 + nsblocks * 8 + nblocks * 20);
     _p.resize(nblocks + 2 + nsblocks * 8 + nblocks * 20);
@@ -121,11 +121,11 @@ class FixedBlockedCorrectionSetsBase4Rank2_ {
         psums[0] = psums[1] = psums[2] = psums[3] = 0;
         ub_sums[0] = ub_sums[1] = ub_sums[2] = ub_sums[3] = 0;
 
-        std::cout << "Processing block starting at position " << i
+       /*  std::cout << "Processing block starting at position " << i
                   << " superblock_log " << _log_superb << '\n';
         cout << "Superblock prefix sums: " << super_sums[0] << " "
              << super_sums[1] << " " << super_sums[2] << " " << super_sums[3]
-             << '\n';
+             << '\n'; */
       }
       if (i % _ub == 0) {
         ub_sums[0] += psums[0] - correction_set_lengths[0];
@@ -204,13 +204,13 @@ class FixedBlockedCorrectionSetsBase4Rank2_ {
           ((uint8_t*)(_bits.data() + bi))[cs] = (uint8_t)cs_size;
           correction_set_lengths[cs] = cs_size;
           total_corrections += cs_size;
-          if (cs_size == _b) {
+          /* if (cs_size == _b) {
             cout << "Correction set " << cs << " size: " << cs_size << " pos "
                  << i << '\n';
             cout << " next size " << correction_set_sizes[(i / _b + 1) * 4 + cs]
                  << " current size "
                  << (correction_set_sizes[(i / _b) * 4 + cs]) << "\n";
-          }
+          } */
 
           // Update psums
         }

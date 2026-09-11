@@ -9,15 +9,12 @@
 #include "Base4RankVector.hh"
 #include "Base4RankVectorTransposed.hh"
 #include "Base4RankVectorWordPacked.hh"
-#include "Pred16.hh"
 #include "Pred8v2.hh"
 #include "SBWT.hh"
 #include "globals.hh"
 
 namespace sbwt {
 
-/* template <typename X_bitvector_t, typename X_bitvector_rank_t,
-          typename Z_bitvector_t, typename Z_rank_support_t> */
 template <typename X_pred8_t, typename Y_quadrankvector_t,
           typename Z_bitvector_t, typename Z_rank_support_t>
 class SubsetNewSplitRank {
@@ -46,27 +43,28 @@ class SubsetNewSplitRank {
     int64_t written = 0;
     int64_t written_tmp = 0;
     written += X.serialize(os);
-    cerr << "X serialized " << written << " bytes\n";
+    std::cout << "Serialized " << typeid(X).name() << ": " << written
+              << " bytes\n";
     written_tmp = Y.serialize(os);
-    cerr << "Y serialized " << written_tmp << " bytes\n";
+    std::cout << "Serialized " << typeid(Y).name() << ": " << written_tmp
+              << " bytes\n";
     written += written_tmp;
 
     written_tmp = Z_A.serialize(os);
-    cerr << "Z_A serialized " << written_tmp << " bytes\n";
     written += written_tmp;
     written += Z_C.serialize(os);
     written += Z_G.serialize(os);
     written += Z_T.serialize(os);
 
-    // written_tmp = X_rs.serialize(os);
-    // written += written_tmp;
-    // cerr << "X_rs serialized " << written_tmp << " bytes\n";
-    written_tmp  = Z_A_rs.serialize(os);
-    cerr << "Z_A_rs serialized " << written_tmp << " bytes\n";
+    std::cout << "Serialized matrix Z" << (written_tmp * 4) << " bytes\n";
+
+    written_tmp = Z_A_rs.serialize(os);
     written += written_tmp;
     written += Z_C_rs.serialize(os);
     written += Z_G_rs.serialize(os);
     written += Z_T_rs.serialize(os);
+    std::cout << "Serialized rank structures for matrix Z" << (written_tmp * 4)
+              << " bytes\n";
 
     return written;
   }
@@ -126,7 +124,7 @@ class SubsetNewSplitRank {
       }
     }
 
-    std::cerr << "n n_b n_u " << n << " " << n_b << " " << n_u << endl;
+    // std::cerr << "n n_b n_u " << n << " " << n_b << " " << n_u << endl;
 
     sdsl::bit_vector X_plain(n);
     sdsl::bit_vector Z_A_plain(n_b);
@@ -155,17 +153,14 @@ class SubsetNewSplitRank {
       }
     }
 
-    // X = Y_quadrankvector_type(X_plain);
     X = X_pred8_t(nonsingleton_sets_vec);
+    Y = Y_quadrankvector_t(Y_str);
 
-    // sdsl::construct_im(Y, Y_str.c_str(), 1); // 1: file format is a sequence,
-    // not a serialized sdsl object
     Z_A = Z_bitvector_t(Z_A_plain);
     Z_C = Z_bitvector_t(Z_C_plain);
     Z_G = Z_bitvector_t(Z_G_plain);
     Z_T = Z_bitvector_t(Z_T_plain);
 
-    // sdsl::util::init_support(X_rs, &X);
     sdsl::util::init_support(Z_A_rs, &Z_A);
     sdsl::util::init_support(Z_C_rs, &Z_C);
     sdsl::util::init_support(Z_G_rs, &Z_G);
@@ -176,10 +171,9 @@ class SubsetNewSplitRank {
     this->rank_supports[2] = &(this->Z_G_rs);
     this->rank_supports[3] = &(this->Z_T_rs);
 
-    Y = Y_quadrankvector_t(Y_str);
 
     // For debugging: verify that ranks match
-    Z_rank_support_t A_bits_rs;
+    /* Z_rank_support_t A_bits_rs;
     Z_rank_support_t C_bits_rs;
     Z_rank_support_t G_bits_rs;
     Z_rank_support_t T_bits_rs;
@@ -216,7 +210,7 @@ class SubsetNewSplitRank {
         std::cerr << "Rank mismatch at position " << i << " for T: " << rT
                   << " vs " << ownT << '\n';
       }
-    } 
+    }  */
   }
 
   SubsetNewSplitRank(const SubsetNewSplitRank& other) {
@@ -257,7 +251,7 @@ class SubsetNewSplitRank {
   }
 
   int64_t rank(int64_t pos, char c) const {
-    // std::cerr << "pos c: " << pos << ' ' << c << '\n';
+
     int64_t rank1 = X.rank(pos);
     int64_t rank0 = pos - rank1;
     uint8_t c_coded = DNA_to_char_idx(c);

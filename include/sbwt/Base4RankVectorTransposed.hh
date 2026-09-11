@@ -30,7 +30,7 @@ class Base4RankVectorTransposed {
     // but no other data.
     _N = nblocks * (2 * _b + 128);
 
-    cout << "_n: " << _n << " nblocks: " << nblocks << " _N: " << _N << '\n';
+    /* cout << "_n: " << _n << " nblocks: " << nblocks << " _N: " << _N << '\n'; */
     _bits.reserve(_N / 64);
     _bits.resize(_N / 64);
     uint32_t* psums = new uint32_t[4];
@@ -162,7 +162,7 @@ class Base4RankVectorTransposed {
     written += sizeof(uint64_t);
     written += sizeof(uint64_t);
     written += sizeof(uint64_t) * (bits_size);
-    cout << "_b " << _b << endl;
+    // cout << "_b " << _b << endl;
     return written;
   }
 
@@ -174,6 +174,6 @@ class Base4RankVectorTransposed {
     _bits.reserve(bits_size);
     _bits.resize(bits_size);
     in.read((char*)_bits.data(), sizeof(uint64_t) * (bits_size));
-    cout << "Loaded summing rank struct with block size _b " << _b << endl;
+    // cout << "Loaded quad rank struct with block size _b " << _b << endl;
   }
 };

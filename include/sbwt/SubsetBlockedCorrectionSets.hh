@@ -11,7 +11,6 @@
 #include "BlockedCorrectionSetsFullyPackedByte.hh"
 // The Fixed block size block correction set with more corrections packed into on word only
 // #include "BlockedCorrectionSetsConstantWordPacked.hh"
-#include "Pred16.hh"
 #include "Pred8v2.hh"
 #include "globals.hh"
 
@@ -21,8 +20,6 @@ using namespace std;
 
 template <typename bitvector_t, typename rank_support_t>
 class SubsetBlockedCorrectionSetsRank {
-  /* X_bitvector_type nonsingleton_sets;
-  X_bitvector_rank_type nonsingleton_sets_rs; */
 
  public:
   uint64_t _logb = 8;
@@ -31,8 +28,6 @@ class SubsetBlockedCorrectionSetsRank {
 
   // Count of character c in subsets up to pos, not including pos
   int64_t rank(int64_t pos, char c) const {
-    /* std::cout << "Rank called for pos " << pos << " and char " << (int)c
-              << '\n'; */
 
     uint8_t c_coded;
     switch (c) {
@@ -53,8 +48,6 @@ class SubsetBlockedCorrectionSetsRank {
         exit(1);
     }
     int64_t result = the_data_structure.rank(pos, c_coded);
-    /* std::cout << "Final result for rank(" << pos << "," << (int)c << ") is "
-              << result << '\n'; */
     return result;
   }
 
@@ -125,11 +118,7 @@ class SubsetBlockedCorrectionSetsRank {
           // Empty set: assigning it to A and inserting to correction set A
           correction_Set_A.push_back(i);
           Y_str[Y_str_idx++] = 0;
-          /* if (i >= 226823169 && i <= 226823169 + 20)  {
-            std::cout << "Empty set at position " << i << "
-          correction_set_sizes[block_idx * 4 + 0] = " <<
-          correction_set_sizes[block_idx * 4 + 0] << '\n';
-          } */
+         
         } else if (A_bits[i] == 1) {
           // > 1 outgoing labels, where lex smallest is A
           Y_str[Y_str_idx++] = 0;
@@ -226,7 +215,7 @@ class SubsetBlockedCorrectionSetsRank {
   int64_t serialize(ostream& os) const {
     int64_t tmp, written = 0;
     written += the_data_structure.serialize(os);
-    std::cout << "Serialized the_data_structure " << written << " bytes\n";
+    std::cout << "Serialized " << typeid(the_data_structure).name() << ": " << written << " bytes\n";
     return written;
   }
 

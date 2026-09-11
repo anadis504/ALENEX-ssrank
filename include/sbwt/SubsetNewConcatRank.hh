@@ -26,14 +26,11 @@ class SubsetNewConcatRank {
  public:
   // Count of character c in subsets up to pos, not including pos
   int64_t rank(int64_t pos, char c) const {
-    /* std::cout << "Rank called for pos " << pos << " and char " << (int)c
-              << '\n'; */
+    
     uint64_t nnz = nonsingleton_sets.rank(pos);
     uint64_t singleton_pos = pos - nnz;
     int64_t lens_sum = nonsingleton_lens.sum_of_ranks(nnz);
-    // if (lens_sum)
-    /* std::cout << "Pos: " << pos << " non-singletons: " << nnz
-              << " Rank: " << rank << " Lens sum: " << lens_sum << '\n'; */
+    
     uint8_t c_coded;
     switch (c) {
       case 'A':
@@ -96,10 +93,7 @@ class SubsetNewConcatRank {
         sum_of_lens += A_bits[i] + C_bits[i] + G_bits[i] + T_bits[i];
       }
     }
-    /* std::cout << "n: " << n << " n_b: " << n_b << " n_u: " << n_u
-              << " sum_of_lens: " << sum_of_lens
-              << " n_u+sum_of_lens: " << n_u + sum_of_lens << '\n'; */
-    /* sdsl::bit_vector X_plain(n, 0); */
+    
     std::vector<uint64_t> nonsingleton_sets_indices;
     std::string Y_str(sum_of_lens + n_u, '\0');
     std::string lens_vec(n_b, '\0');
@@ -112,37 +106,19 @@ class SubsetNewConcatRank {
       if (T_bits[i] == 1) Y_str[Y_str_idx++] = 3;
       if (A_bits[i] + C_bits[i] + G_bits[i] + T_bits[i] != 1) {
         // One outgoing label
-        /* X_plain[i] = 0;
-      } else { */
-        // 0 or > 1 outgoing labels
-        /* X_plain[i] = 1; */
         nonsingleton_sets_indices.push_back(i);
         int64_t set_len = A_bits[i] + C_bits[i] + G_bits[i] + T_bits[i];
         uint8_t encoded_len = (uint8_t)set_len - (uint8_t)(bool)(set_len > 0);
         lens[encoded_len]++;
         lens_vec[lens_idx++] = encoded_len;  // store length minus one
-        /* if (encoded_len)
-        std::cout << "Length for set " << i << " (" << lens_idx - 1 << ") : " <<
-        set_len << " Encoded length for position " << i << ": "
-                   << (int)encoded_len << '\n'; */
       }
     }
-    /* for (int i = 0, j = 0; i < 20; i++) {
-      std::cout << " len at pos " << i << ": " << (int)lens_vec[i];
-      for (int k = 0; k < (int)lens_vec[i] + (bool)(int)lens_vec[i]; k++)
-        std::cout << (int)Y_str[j++];
-      std::cout << '\n';
-    } */
-    /* std::cout << "Constructed X of length " << X_plain.size()
-              << " and Y of length " << Y_str.size()
-              << " Y_str_idx: " << Y_str_idx << " lens_idx: " << lens_idx
-              << '\n'; */
-    /* nonsingleton_sets = bitvector_t(X_plain);
-    sdsl::util::init_support(nonsingleton_sets_rs, &nonsingleton_sets); */
+    
     nonsingleton_sets = Pred8v2(nonsingleton_sets_indices);
     nonsingleton_lens = Base4SummingRankVectorTransposed<4>(lens_vec);
     concat = Base4RankVectorTransposed<4>(Y_str);
 
+    // For debugging: verify that ranks match
     /* rank_support_t A_bits_rs;
     rank_support_t C_bits_rs;
     rank_support_t G_bits_rs;
@@ -189,8 +165,6 @@ class SubsetNewConcatRank {
     written += nonsingleton_sets.serialize(os);
     std::cout << "Serialized nonsingleton_sets "
               << nonsingleton_sets.sizeInBytes() << " bytes\n";
-    /* written += nonsingleton_sets_rs.serialize(os);
-    std::cout << "Serialized nonsingleton_sets_rs " << written << " bytes\n"; */
     written += nonsingleton_lens.serialize(os);
     std::cout << "Serialized nonsingleton_lens "
               << nonsingleton_lens.size_in_bytes() << " bytes\n";
@@ -201,12 +175,6 @@ class SubsetNewConcatRank {
     concat.load(is);
     nonsingleton_sets.load(is);
 
-    /* if (std::is_same<sdsl::rank_support_v5<>, rank_support_t>::value) {
-      nonsingleton_sets_rs.load(is, &nonsingleton_sets);
-    } else {
-      nonsingleton_sets_rs.load(is);
-      nonsingleton_sets_rs.set_vector(&nonsingleton_sets);
-    } */
     nonsingleton_lens.load(is);
     cout << "Loaded SubsetNewConcatRank with concat size: "
          << concat.size_in_bytes()
@@ -228,8 +196,6 @@ class SubsetNewConcatRank {
     if (&other != this) {
       this->concat = other.concat;
       this->nonsingleton_sets = other.nonsingleton_sets;
-      /* this->nonsingleton_sets_rs = other.nonsingleton_sets_rs;
-      this->nonsingleton_sets_rs.set_vector(&this->nonsingleton_sets); */
       this->nonsingleton_lens = other.nonsingleton_lens;
       return *this;
     } else

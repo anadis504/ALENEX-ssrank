@@ -31,7 +31,7 @@ class Base4RankVectorWordPacked {
     // but no other data.
     _N = nblocks * (2 * _b + 128);
 
-    cout << "_n: " << _n << " nblocks: " << nblocks << " _N: " << _N << '\n';
+    //cout << "_n: " << _n << " nblocks: " << nblocks << " _N: " << _N << '\n';
     _bits.reserve(_N / 64);
     _bits.resize(_N / 64);
     uint32_t* psums = new uint32_t[4];

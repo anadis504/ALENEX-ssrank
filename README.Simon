@@ -1,6 +1,0 @@
-#To build the plain-matrix form of the index from the Ecoli3682 data set
-./build/bin/sbwt build -i /Users/puglisi/Desktop/Simon/data/coli3682_dataset/coli3682.fna --variant plain-matrix -o plain-matrix.sbwt -k 30
-
-#To build, e.g., the block-matrix variant from an already constructed plain-matrix form of the index
-./build/bin/sbwt build-variant -i ./plain-matrix.sbwt -o ./block-matrix.sbwt --variant block-matrix
-

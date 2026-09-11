@@ -7,7 +7,7 @@
 
 using namespace std;
 
-static vector<string> commands = {"build", "build-variant", "search", "ascii-export", "s-rank-queries"};
+static vector<string> commands = {"build", "build-variant", "search", "ascii-export", "s-rank-queries", "sample-kmers"};
 
 void print_help(int argc, char** argv){
     (void) argc; // Unused parameter
@@ -45,6 +45,7 @@ int main(int argc, char** argv){
         else if(command == "build-variant") return build_from_plain_main(argc, argv);
         else if(command == "ascii-export") return ascii_export_main(argc, argv);
         else if(command == "s-rank-queries") return s_rank_queries_main(argc, argv);
+        else if(command == "sample-kmers") return sample_kmers_from_index_main(argc, argv);
         else{
             throw std::runtime_error("Invalid command: " + command);
             return 1;

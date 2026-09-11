@@ -60,15 +60,15 @@ class FixedBlockedCorrectionSetsBase4Rank2 {
     // The last block has just the prefix sums (128 bits) but no other data.
     _N = nblocks * (block_constant * 64) + corrections * 16 + nblocks * 64;
 
-    cout << "Packed P array + packed prefix sums blocked correction sets split "
-            "byte packed, block size "
+    /* cout << "Packed P array + packed prefix sums blocked correction sets
+    split " "byte packed, block size "
          << _b << " \n";
     cout << "_n: " << _n << " nblocks: " << nblocks << " _N: " << _N
          << " corrections: " << corrections << " nsblocks: " << nsblocks
          << '\n';
     cout << "log_b: " << _logb << " _b: " << _b
          << " log_superb: " << _log_superb << " super_b: " << _super_b << '\n';
-    _bits.reserve(_N / 64);
+ */ _bits.reserve(_N / 64);
     _bits.resize(_N / 64);
     _p.reserve(nblocks + 2 + nsblocks * 8 + nblocks * 20);
     _p.resize(nblocks + 2 + nsblocks * 8 + nblocks * 20);
@@ -107,11 +107,11 @@ class FixedBlockedCorrectionSetsBase4Rank2 {
         psums[0] = psums[1] = psums[2] = psums[3] = 0;
         ub_sums[0] = ub_sums[1] = ub_sums[2] = ub_sums[3] = 0;
 
-        std::cout << "Processing block starting at position " << i
+        /* std::cout << "Processing block starting at position " << i
                   << " superblock_log " << _log_superb << '\n';
         cout << "Superblock prefix sums: " << super_sums[0] << " "
              << super_sums[1] << " " << super_sums[2] << " " << super_sums[3]
-             << '\n';
+             << '\n'; */
       }
       if (i % _ub == 0) {
         ub_sums[0] += psums[0] - correction_set_lengths[0];
@@ -163,13 +163,13 @@ class FixedBlockedCorrectionSetsBase4Rank2 {
           ((uint8_t*)(_bits.data() + bi))[cs] = (uint8_t)cs_size;
           correction_set_lengths[cs] = cs_size;
           total_corrections += cs_size;
-          if (cs_size == _b) {
+          /* if (cs_size == _b) {
             cout << "Correction set " << cs << " size: " << cs_size << " pos "
                  << i << '\n';
             cout << " next size " << correction_set_sizes[(i / _b + 1) * 4 + cs]
                  << " current size "
                  << (correction_set_sizes[(i / _b) * 4 + cs]) << "\n";
-          }
+          } */
 
           // Update psums
         }
@@ -285,7 +285,6 @@ class FixedBlockedCorrectionSetsBase4Rank2 {
       // ((uint32_t*)(_p.data() + p_pointer))[(_n / _b) % 2] = bi << 1;
       //_p[p_ptr++] = (uint32_t)bi;
       bi++;
-      cout << "  --- !!!!! this happened\n";
     }
     _bits.resize(bi + 1);
     _N = _bits.size() * 64;
@@ -294,8 +293,8 @@ class FixedBlockedCorrectionSetsBase4Rank2 {
               << " of size " << size_in_bytes() << " bytes" << std::endl;
     std::cout << "P array size: " << _p.size() * sizeof(uint32_t) << " bytes"
               << std::endl;
-    cout << "Min words per block: " << min_words
-         << " Max words per block: " << max_words << '\n';
+    /* cout << "Min words per block: " << min_words
+         << " Max words per block: " << max_words << '\n'; */
     cout << "Fitted " << fitted_block << " blocks, "
          << (float)fitted_block / block_num * 100 << "'%'  out of " << block_num
          << "\n";
@@ -418,7 +417,7 @@ class FixedBlockedCorrectionSetsBase4Rank2 {
     uint64_t lower_w = blockwords[1];
     upper_w = (sym & 0x2) ? upper_w : ~upper_w;
     lower_w = (sym & 0x1) ? lower_w : ~lower_w;
-    wholeWordRank += (bool)(blocki) * __builtin_popcountll(upper_w & lower_w);
+    wholeWordRank += (bool)(blocki)*__builtin_popcountll(upper_w & lower_w);
 
     if (pos % 64) {  // possibly inspect part of the next word
       uint64_t upper_w = blockwords[blocki];

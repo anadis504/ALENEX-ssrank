@@ -9,20 +9,16 @@
 // #include "BlockedCorrectionSetsConstant.hh"
 // The Fixed block size blocked correction set with more corrections packed into
 // one word only, subsets per block 2^7
-#include "BlockedCorrectionSetsConstantWordPacked7.hh"
-#include "Pred16.hh"
-#include "Pred8v2.hh"
+// #include "BlockedCorrectionSetsConstantWordPacked7.hh"
 #include "globals.hh"
 
 namespace sbwt {
 
 using namespace std;
 
-template <typename fixed_block_correction_sets_t,typename bitvector_t, typename rank_support_t>
+template <typename fixed_block_correction_sets_t, typename bitvector_t,
+          typename rank_support_t>
 class SubsetFixedBlockCorrectionSetsRank7 {
-  /* X_bitvector_type nonsingleton_sets;
-  X_bitvector_rank_type nonsingleton_sets_rs; */
-
  public:
   uint64_t _logb = 7;
   uint64_t _b = (uint64_t)1 << _logb;  // number of symbols per block
@@ -223,7 +219,8 @@ class SubsetFixedBlockCorrectionSetsRank7 {
   int64_t serialize(ostream& os) const {
     int64_t tmp, written = 0;
     written += the_data_structure.serialize(os);
-    std::cout << "Serialized the_data_structure " << written << " bytes\n";
+    std::cout << "Serialized " << typeid(the_data_structure).name() << ": "
+              << written << " bytes\n";
     return written;
   }
 
