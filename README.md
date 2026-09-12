@@ -6,18 +6,90 @@ This construction algorithm is based on the lightning-fast [k-mer counter KMC](h
 
 # Compiling
 
-## Building with Docker
-
-The recommended way to build the artifact is using the supplied Dockerfile:
+Download the repository with its submodules
 
 ```bash
 git clone --recurse-submodules https://github.com/anadis504/ALENEX-ssrank.git
 
 cd ALENEX-ssrank
 
-docker build -t alenex-ssrank .
+```
 
-docker run --rm alenex-ssrank --help
+## Building with Docker
+
+A Dockerfile is provided for building and running SBWT in a self-contained Ubuntu 22.04 environment. The Docker image builds the sbwt executable automatically.
+
+Building the Docker image
+
+From the repository root, run:
+
+```bash
+docker build -t sbwt .
+```
+
+
+After the image has been built, verify that the executable is available:
+
+```bash
+docker run --rm sbwt --help
+```
+
+The container exposes sbwt as its entrypoint, so Docker arguments are passed directly to the SBWT executable.
+
+### Building an SBWT index with Docker
+
+The repository contains example input data in example_data/. For example:
+```bash
+docker run --rm \
+    sbwt \
+    build \
+    -i /SBWT/example_data/coli3.fna \
+    -o /tmp/index.sbwt \
+    -k 30
+```
+
+For data outside the repository, mount the directory containing the input data into the container. For example, if `/path/to/data` contains `input.fna`:
+
+```bash
+docker run --rm \
+    -v "/path/to/data:/data" \
+    sbwt \
+    build \
+    -i /data/input.fna \
+    -o /data/index.sbwt \
+    -k 30
+```
+
+The directory `/data` is a directory inside the container mapped to `/path/to/data` on the host. Therefore, the resulting `index.sbwt` will be available directly in `/path/to/data` after the container exits.
+
+Other SBWT commands can be run in the same way. For example, to search an existing index:
+
+```bash
+docker run --rm \
+    -v "/path/to/data:/data" \
+    sbwt \
+    search \
+    -i /data/index.sbwt \
+    -q /data/queries.fastq \
+    -o /data/out.txt
+```
+
+To see the available commands and options:
+
+```bash
+docker run --rm sbwt --help
+```
+
+To see the options for a particular command:
+
+```bash
+docker run --rm sbwt build --help
+```
+
+or:
+
+```bash
+docker run --rm sbwt search --help
 ```
 
 ## Manual compilation
@@ -43,7 +115,7 @@ On MacOS `cmake` with the following flags:
 
 ```bash
 cmake .. -DCMAKE_CXX_COMPILER=g++-12 -DMAX_KMER_LENGTH=32 -DCMAKE_EXE_LINKER_FLAGS=-Wl,-ld_classic
-````
+```
 
 
 Change the parameter `-DMAX_KMER_LENGTH=32` to increase the maximum allowed k-mer length, up to 255. Larger values lead to slower construction and higher disk usage during construction.
@@ -52,7 +124,7 @@ Change the parameter `-DMAX_KMER_LENGTH=32` to increase the maximum allowed k-me
 
 Note: the Elias-Fano variants make use of the `_pext_u64` instruction in the BMI2 instruction set. Older CPUs might not support this instruction. In that case, we fall back to a simple software implementation, which will ruin the performance of the Elias-Fano variants (those whose variant name starts with "mef").
 
-# Index construction
+## Index construction
 
 Below is the command to build the SBWT for input data `example_data/coli3.fna` provided in this repository, with k = 30. The index is written to the file `index.sbwt`.
 
