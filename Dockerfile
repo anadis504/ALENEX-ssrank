@@ -23,4 +23,6 @@ RUN mkdir -p build && \
 
 RUN cmake --build build -j8
 
-CMD ["/SBWT/build/bin/sbwt"]
+RUN ln -s /SBWT/build/bin/sbwt /usr/local/bin/sbwt
+
+CMD ["sbwt"]
