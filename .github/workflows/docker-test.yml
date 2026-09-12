@@ -27,13 +27,15 @@ jobs:
 
       - name: Build example SBWT index
         run: |
+          mkdir -p test-output
+
           docker run --rm \
-            -v "$PWD:/SBWT" \
+            -v "$PWD/test-output:/output" \
             sbwt-test \
             build \
             -i /SBWT/example_data/coli3.fna \
-            -o /SBWT/index.sbwt \
+            -o /output/index.sbwt \
             -k 30
 
       - name: Verify index was created
-        run: test -s index.sbwt
+        run: test -s test-output/index.sbwt
