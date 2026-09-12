@@ -1,30 +1,47 @@
 # SBWT
 
-This is the code for the paper [New space-time tradeoffs for subset rank and k-mer lookup](). The repository includes implementations of the various SBWT variants described in the paper. The data structures answer k-mer membership queries on the input data. Note that contrary to many other k-mer membership data structures, our code is not aware of DNA reverse complements. That is, it considers a k-mer and its reverse complement as separate k-mers.
+This is the code for the paper "New space-time tradeoffs for subset rank and k-mer lookup". The repository includes implementations of the various SBWT variants described in the paper. The data structures answer k-mer membership queries on the input data. Note that contrary to many other k-mer membership data structures, our code is not aware of DNA reverse complements. That is, it considers a k-mer and its reverse complement as separate k-mers.
 
 This construction algorithm is based on the lightning-fast [k-mer counter KMC](https://github.com/refresh-bio/KMC). We call the KMC binaries directly from our code. The construction is very disk-heavy, so it is recommended to run construction code off a fast SSD drive.
 
 # Compiling
 
-The following commands have been tested to successfully build SBWT on a clean Ubuntu 22.04 Docker image.
+## Building with Docker
 
+The recommended way to build the artifact is using the supplied Dockerfile:
+
+```bash
+git clone --recurse-submodules https://github.com/anadis504/ALENEX-ssrank.git
+
+cd ALENEX-ssrank
+
+docker build -t alenex-ssrank .
+
+docker run --rm alenex-ssrank --help
 ```
+
+## Manual compilation
+
+Alternatively, SBWT can be compiled directly on Ubuntu.
+
+```bash
 apt-get update
 apt-get install -y g++ gcc cmake git python3-dev g++-8 libz-dev
 
 git clone --recurse-submodules \
     https://github.com/anadis504/ALENEX-ssrank.git
-    
-git submodule update --init --recursive
 
-cd ALENEX-ssrank/build
+cd ALENEX-ssrank
+mkdir build
+cd build
+
 cmake .. -DCMAKE_CXX_COMPILER=g++-8 -DMAX_KMER_LENGTH=32
 make -j8
 ```
 
-On Mac `cmake` with the following flags:
+On MacOS `cmake` with the following flags:
 
-```
+```bash
 cmake .. -DCMAKE_CXX_COMPILER=g++-12 -DMAX_KMER_LENGTH=32 -DCMAKE_EXE_LINKER_FLAGS=-Wl,-ld_classic
 ````
 
@@ -43,7 +60,7 @@ Below is the command to build the SBWT for input data `example_data/coli3.fna` p
 ./build/bin/sbwt build -i example_data/coli3.fna -o index.sbwt -k 30
 ```
 
-This builds the default variant, which is the plain matrix SBWT. Other variant can be specified with the `--variant` option.
+This builds the default variant, which is the plain matrix SBWT. Other variants can be specified with the `--variant` option.
 The list of all command line options and parameters is below:
 
 ```
@@ -114,17 +131,17 @@ Usage example: build -i example_data/coli3.fna -o index.sbwt -k 30
 
 
 
-To build, e.g., the corrections-sets variant from the already constructed plain-matrix variant (Ecoli_31_r.sbwt) run:
+To build, e.g., the corrections-sets variant from the already constructed plain-matrix variant (Ecoli_31.sbwt) run:
 
 
 ``` diff
 ./build/bin/sbwt build-variant \
-    -i /data/Ecoli_31_r.sbwt \
+    -i /data/Ecoli_31.sbwt \
     -o /data/correction-sets.sbwt \
     --variant correction-sets
 ```
 
-The input file is one of the supplied plain-matrix SBWT indexes.
+The input file is one of the supplied plain-matrix SBWT indexes corresponding to a dataset used in the experimental evaluation.
 
 The large input indexes required to reproduce the experiments are distributed separately. See the instructions in the ALENEX Artifact Evaluation README.md for information about obtaining the experimental data.
 
@@ -136,7 +153,7 @@ To query for existence of all k-mers in an index for all sequences in a fastq-fi
 ./build/bin/sbwt search -i ./correction-sets.sbwt -q example_data/queries.fastq -o out.txt
 ```
 
-This prints for each query of length n in the input a line containing n-k+1 space-separated integers, which are the ranks of the columns representing the k-mer in the index. If the k-mer is not found, -1 is printed. If the index was built streaming support (which is the default), the faster streaming query algorithm is automatically used. The full options are:
+This prints for each query of length n in the input a line containing n-k+1 space-separated integers, which are the ranks of the columns representing the k-mer in the index. If the k-mer is not found, -1 is printed. If the index was built with streaming support (which is the default), the faster streaming query algorithm is automatically used. The full options are:
 
 ```
 Query all k-mers of all input reads.

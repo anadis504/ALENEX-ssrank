@@ -1,0 +1,36 @@
+name: Docker test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  docker-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Build Docker image
+        run: docker build -t sbwt-test .
+
+      - name: Check executable
+        run: |
+          docker run --rm sbwt-test --help
+
+      - name: Build example SBWT index
+        run: |
+          docker run --rm \
+            -v "$PWD:/SBWT" \
+            sbwt-test \
+            build \
+            -i /SBWT/example_data/coli3.fna \
+            -o /SBWT/index.sbwt \
+            -k 30
+
+      - name: Verify index was created
+        run: |
+          test -s index.sbwt
