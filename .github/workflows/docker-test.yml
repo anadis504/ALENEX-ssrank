@@ -15,7 +15,12 @@ jobs:
           submodules: recursive
 
       - name: Build Docker image
-        run: docker build -t sbwt-test .
+        run: docker build --no-cache -t sbwt-test .
+
+      - name: Inspect Docker image
+        run: |
+          docker image inspect sbwt-test \
+            --format='Entrypoint={{json .Config.Entrypoint}} Cmd={{json .Config.Cmd}}'
 
       - name: Check executable
         run: docker run --rm sbwt-test --help

@@ -1,6 +1,6 @@
 # ALENEX Artifact Evaluation Data
 
-This [archive](link_to_server) contains the experimental data required to reproduce the experiments in the paper *New space-time tradeoffs for subset rank and k-mer lookup*.
+This [archive](https://tinyurl.com/ALENEX-2027-AE-Diseth-Puglisi) contains the experimental data required to reproduce the experiments in the paper *New space-time tradeoffs for subset rank and k-mer lookup*.
 
 The three datasets used in the experiments are described in detail in the paper.
 
