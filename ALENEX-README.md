@@ -1,6 +1,6 @@
 # ALENEX Artifact Evaluation
 
-This artifact contains the implementation and experimental data for the ALENEX paper `New space-time tradeoffs for subset rank and k-mer lookup`.
+This artifact contains the implementation and experimental data for the ALENEX-2027 paper `New space-time tradeoffs for subset rank and k-mer lookup`.
 
 The artifact evaluation focuses on three reproducibility checks:
 
@@ -27,11 +27,15 @@ The absolute runtime depends on the hardware used for evaluation. The resulting 
 
 ## Obtain the experimental data
 
-The experimental data are provided separately from the GitHub repository:
+The experimental data are provided as a separate archive file, `ALENEX-artifact-data.zip` (about 2.9 GB compressed, 4.8 GB extracted), in the same Zenodo record as this source-code archive.
 
-[dropbox-archive](https://tinyurl.com/ALENEX-2027-AE-Diseth-Puglisi)
+Download and extract the experimental-data archive:
 
-Download and extract the archive.
+```bash
+unzip ALENEX-artifact-data.zip
+```
+
+This creates the directory `ALENEX-artifact-data/`.
 
 The extracted directory contains the three plain-matrix SBWT indexes, positive-query datasets, and s-rank query data described below. 
 
@@ -43,7 +47,7 @@ The extracted directory contains the three plain-matrix SBWT indexes, positive-q
 | 661k *Salmonella* | `661kSalmonella_31.sbwt` | 419,670,120 |
 | Human | `Human_31.sbwt` | 3,990,246,312 |
 
-The variants described in the paper can be constructed from these indexes using the `build-variant` command documented in the main repository README.
+The variants described in the paper can be constructed from these indexes using the `build-variant` command documented in `README.md` in the root of the source-code archive.
 
 
  * The positive query files contain 50,000 positive query reads of length 1,000 bp sampled from the corresponding datasets:
@@ -63,16 +67,16 @@ test_indices.bin
 test_characters.bin
 ```
 
-After extraction, choose a directory for the experimental data, referred to below as:
+The absolute path of the extracted `ALENEX-artifact-data/` directory is referred to below as:
 
 ```/path/to/data```
 
 ## Build the Docker image
 
-Clone the repository together with its submodules:
+Extract the source-code archive. It already includes all required submodules (`sdsl-lite`, `KMC`, `SeqIO`, `googletest`), so no network access to external repositories is needed:
 
 ```bash
-git clone --recurse-submodules https://github.com/anadis504/ALENEX-ssrank.git
+unzip ALENEX-ssrank.zip
 cd ALENEX-ssrank
 ```
 
